@@ -2,6 +2,6 @@
 <project version="4">
   <component name="ScalaCompilerConfiguration">
     <option name="separateProdTestSources" value="true" />
-    <profile name="sbt 1" modules="scall,scall.main,scall.test" />
+    <profile name="sbt 1" modules="scall-demo,scall-demo.finf,scall-demo.finf.main,scall-demo.finf.test,scall-demo.main,scall-demo.scall,scall-demo.scall.main,scall-demo.scall.test,scall-demo.test" />
   </component>
 </project>

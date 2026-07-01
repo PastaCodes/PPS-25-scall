@@ -8,7 +8,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/finf" />
             <option value="$PROJECT_DIR$/project" />
+            <option value="$PROJECT_DIR$/scall" />
           </set>
         </option>
         <option name="sbtVersion" value="2.0.1" />
