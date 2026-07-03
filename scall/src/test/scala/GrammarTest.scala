@@ -32,27 +32,24 @@ class GrammarTest extends AnyFunSuite:
     (a ++ b | c ++ a) shouldBe Alternation(Concat(a, b), Concat(c, a))
 
   object ArithmeticGrammar extends Grammar:
-    val expression: Element = ->(term ++ (plus ++ expression).?)
-    val term: Element = -> (digit.+)
-    val plus: Element = -> ("+")
-    val digit: Element = -> (zero | one)
-    val zero: Element = -> ("0")
-    val one: Element = -> ("1")
+    val expression: Rule = ->(term ++ (plus ++ expression).?)
+    val term: Rule = -> (digit.+)
+    val plus: Terminal = -> ("+")
+    val digit: Rule = -> (zero | one)
+    val zero: Terminal = -> ("0")
+    val one: Terminal = -> ("1")
 
   test("-> create a terminal from a string"):
     ArithmeticGrammar.plus shouldBe Terminal("+")
 
   test("-> create a rule with a lazily evaluated body"):
-    val Rule(body) = ArithmeticGrammar.digit: @unchecked
-    body() shouldBe Alternation(Terminal("0"), Terminal("1"))
+    ArithmeticGrammar.digit.body() shouldBe Alternation(Terminal("0"), Terminal("1"))
 
   test("a rule can reference rules defined after it"):
-    val Rule(body) = ArithmeticGrammar.term: @unchecked
-    body() shouldBe OneOrMore(ArithmeticGrammar.digit)
+    ArithmeticGrammar.term.body() shouldBe OneOrMore(ArithmeticGrammar.digit)
 
   test("a rule can reference itself without looping"):
-    val Rule(body) = ArithmeticGrammar.expression: @unchecked
-    body() shouldBe Concat(
+    ArithmeticGrammar.expression.body() shouldBe Concat(
       ArithmeticGrammar.term,
       Optional(Concat(ArithmeticGrammar.plus, ArithmeticGrammar.expression))
     )
