@@ -3,7 +3,7 @@ package it.unibo.scall
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 
-class ProcessedGrammarTest extends AnyFunSuite:
+class ProcessedGrammarAlternativesTest extends AnyFunSuite:
 
   // noinspection TypeAnnotation, ForwardReference
   object SimpleGrammar extends Grammar:
@@ -79,4 +79,21 @@ class ProcessedGrammarTest extends AnyFunSuite:
     val repetitionSymbol = InternalNonterminal()
     Alternatives.ofZeroOrMore(repetitionSymbol) shouldBe Set(
       Seq(repetitionSymbol)
+    )
+
+  test("oneOrMore of terminal is processed as a single alternative concatenating repetition"):
+    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
+    val repetitionSymbol = InternalNonterminal()
+    Alternatives.ofOneOrMore(aAlt, repetitionSymbol) shouldBe Set(
+      Seq(SimpleGrammar.a, repetitionSymbol)
+    )
+
+  test("oneOrMore is process by concatenating repetition to all alternatives"):
+    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
+    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
+    val alt = Alternatives.ofAlternation(aAlt, bAlt)
+    val repetitionSymbol = InternalNonterminal()
+    Alternatives.ofOneOrMore(alt, repetitionSymbol) shouldBe Set(
+      Seq(SimpleGrammar.a, repetitionSymbol),
+      Seq(SimpleGrammar.b, repetitionSymbol)
     )

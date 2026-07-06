@@ -11,8 +11,15 @@ type Alternatives = Set[SymbolSeq]
 object Alternatives:
   def ofTerminal(s: Terminal): Alternatives = Set(Seq(s))
   def ofNonterminal(s: Rule): Alternatives = Set(Seq(s))
-  def ofConcat(t1: Alternatives, t2: Alternatives): Alternatives =
-    for a1 <- t1; a2 <- t2 yield a1 concat a2
+  def ofConcat(t1: Alternatives, t2: Alternatives): Alternatives = t1 productConcat t2
   def ofAlternation(t1: Alternatives, t2: Alternatives): Alternatives = t1 union t2
   def ofOptional(t: Alternatives): Alternatives = t incl Seq.empty
   def ofZeroOrMore(rep: InternalNonterminal): Alternatives = Set(Seq(rep))
+  def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives = t.map(_ appended rep)
+
+extension [A](self: Set[Seq[A]])
+  infix def productConcat(other: Set[Seq[A]]): Set[Seq[A]] =
+    for
+      x <- self
+      y <- other
+    yield x concat y
