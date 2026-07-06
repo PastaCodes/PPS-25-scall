@@ -74,3 +74,9 @@ class ProcessedGrammarTest extends AnyFunSuite:
       Seq(SimpleGrammar.b),
       Seq()
     )
+
+  test("zeroOrMore is processed as a single alternative"):
+    val repetitionSymbol = InternalNonterminal()
+    Alternatives.ofZeroOrMore(repetitionSymbol) shouldBe Set(
+      Seq(repetitionSymbol)
+    )
