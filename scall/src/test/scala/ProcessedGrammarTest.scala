@@ -7,18 +7,11 @@ class ProcessedGrammarTest extends AnyFunSuite:
 
   // noinspection TypeAnnotation, ForwardReference
   object SimpleGrammar extends Grammar:
-    val start = -> (alternationSimple)
+    val start = -> (a | b)
     val a = -> ("a")
     val b = -> ("b")
     val c = -> ("c")
     val d = -> ("d")
-    val alternationSimple = a | b
-    val alternationDeep = (a | b) | (b | c)
-    val concatSimple = a ++ b
-    val concatDeep = (a | b) ++ (b | c)
-    val optional = a.?
-    val zeroOrMore = a.*
-    val oneOrMore = a.+
 
   test("terminal is processed as a single alternative"):
     Alternatives.ofTerminal(SimpleGrammar.a) shouldBe Set(Seq(SimpleGrammar.a))
@@ -63,4 +56,21 @@ class ProcessedGrammarTest extends AnyFunSuite:
       Seq(SimpleGrammar.a, SimpleGrammar.d),
       Seq(SimpleGrammar.b, SimpleGrammar.c),
       Seq(SimpleGrammar.b, SimpleGrammar.d)
+    )
+
+  test("optional of terminal is processed as two alternatives"):
+    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
+    Alternatives.ofOptional(aAlt) shouldBe Set(
+      Seq(SimpleGrammar.a),
+      Seq()
+    )
+
+  test("optional is processed by adding an empty sequence"):
+    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
+    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
+    val alt = Alternatives.ofAlternation(aAlt, bAlt)
+    Alternatives.ofOptional(alt) shouldBe Set(
+      Seq(SimpleGrammar.a),
+      Seq(SimpleGrammar.b),
+      Seq()
     )
