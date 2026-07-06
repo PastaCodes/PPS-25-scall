@@ -65,7 +65,7 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
       Seq()
     )
 
-  test("optional is processed by adding an empty sequence"):
+  test("optional is processed by adding an empty sequence to alternatives"):
     val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
     val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
     val alt = Alternatives.ofAlternation(aAlt, bAlt)

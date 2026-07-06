@@ -7,6 +7,7 @@ type AnyNonterminal = Rule | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal
 type SymbolSeq = Seq[AnySymbol]
 type Alternatives = Set[SymbolSeq]
+type Productions = Map[AnyNonterminal, Alternatives]
 
 object Alternatives:
   def ofTerminal(s: Terminal): Alternatives = Set(Seq(s))
@@ -16,6 +17,9 @@ object Alternatives:
   def ofOptional(t: Alternatives): Alternatives = t incl Seq.empty
   def ofZeroOrMore(rep: InternalNonterminal): Alternatives = Set(Seq(rep))
   def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives = t.map(_ appended rep)
+
+object Productions:
+  def ofNonTerminal(s: Rule, b: Alternatives): Productions = Map(s -> b)
 
 extension [A](self: Set[Seq[A]])
   infix def productConcat(other: Set[Seq[A]]): Set[Seq[A]] =
