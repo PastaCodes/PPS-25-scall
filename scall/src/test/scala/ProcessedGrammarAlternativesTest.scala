@@ -14,23 +14,23 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
     val d = -> ("d")
 
   test("terminal is processed as a single alternative"):
-    Alternatives.ofTerminal(SimpleGrammar.a) shouldBe Set(Seq(SimpleGrammar.a))
+    Alternatives.ofSymbol(SimpleGrammar.a) shouldBe Set(Seq(SimpleGrammar.a))
 
   test("nonterminal is processed as a single alternative"):
-    Alternatives.ofNonterminal(SimpleGrammar.start) shouldBe Set(Seq(SimpleGrammar.start))
+    Alternatives.ofSymbol(SimpleGrammar.start) shouldBe Set(Seq(SimpleGrammar.start))
 
   test("alternation of terminals is processed as two alternatives"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
-    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
     Alternatives.ofAlternation(aAlt, bAlt) shouldBe Set(
       Seq(SimpleGrammar.a), Seq(SimpleGrammar.b)
     )
 
   test("alternation is processed as the union of alternatives"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
-    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
-    val cAlt = Alternatives.ofTerminal(SimpleGrammar.c)
-    val dAlt = Alternatives.ofTerminal(SimpleGrammar.d)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
+    val cAlt = Alternatives.ofSymbol(SimpleGrammar.c)
+    val dAlt = Alternatives.ofSymbol(SimpleGrammar.d)
     val alt1 = Alternatives.ofAlternation(aAlt, bAlt)
     val alt2 = Alternatives.ofAlternation(cAlt, dAlt)
     Alternatives.ofAlternation(alt1, alt2) shouldBe Set(
@@ -38,17 +38,17 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
     )
 
   test("concatenation of terminals is processed as a single alternative"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
-    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
     Alternatives.ofConcat(aAlt, bAlt) shouldBe Set(
       Seq(SimpleGrammar.a, SimpleGrammar.b)
     )
 
   test("concatenation is processed as the product of concatenated alternatives"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
-    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
-    val cAlt = Alternatives.ofTerminal(SimpleGrammar.c)
-    val dAlt = Alternatives.ofTerminal(SimpleGrammar.d)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
+    val cAlt = Alternatives.ofSymbol(SimpleGrammar.c)
+    val dAlt = Alternatives.ofSymbol(SimpleGrammar.d)
     val alt1 = Alternatives.ofAlternation(aAlt, bAlt)
     val alt2 = Alternatives.ofAlternation(cAlt, dAlt)
     Alternatives.ofConcat(alt1, alt2) shouldBe Set(
@@ -59,15 +59,15 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
     )
 
   test("optional of terminal is processed as two alternatives"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
     Alternatives.ofOptional(aAlt) shouldBe Set(
       Seq(SimpleGrammar.a),
       Seq()
     )
 
   test("optional is processed by adding an empty sequence to alternatives"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
-    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
     val alt = Alternatives.ofAlternation(aAlt, bAlt)
     Alternatives.ofOptional(alt) shouldBe Set(
       Seq(SimpleGrammar.a),
@@ -82,15 +82,15 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
     )
 
   test("oneOrMore of terminal is processed as a single alternative concatenating repetition"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
     val repetitionSymbol = InternalNonterminal()
     Alternatives.ofOneOrMore(aAlt, repetitionSymbol) shouldBe Set(
       Seq(SimpleGrammar.a, repetitionSymbol)
     )
 
   test("oneOrMore is process by concatenating repetition to all alternatives"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
-    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
     val alt = Alternatives.ofAlternation(aAlt, bAlt)
     val repetitionSymbol = InternalNonterminal()
     Alternatives.ofOneOrMore(alt, repetitionSymbol) shouldBe Set(

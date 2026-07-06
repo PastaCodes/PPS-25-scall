@@ -12,12 +12,25 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
     val b = -> ("b")
 
   test("nonterminal is processed as productions for all rule body alternatives"):
-    val aAlt = Alternatives.ofTerminal(SimpleGrammar.a)
-    val bAlt = Alternatives.ofTerminal(SimpleGrammar.b)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
     val alt = Alternatives.ofAlternation(aAlt, bAlt)
     Productions.ofNonTerminal(SimpleGrammar.start, alt) shouldBe Map(
       SimpleGrammar.start -> Set(
         Seq(SimpleGrammar.a),
         Seq(SimpleGrammar.b)
+      )
+    )
+
+  test("zeroOrMore is processed as productions concatenating repetition and adding empty production"):
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
+    val alt = Alternatives.ofAlternation(aAlt, bAlt)
+    val repetitionSymbol = InternalNonterminal()
+    Productions.ofOrMore(alt, repetitionSymbol) shouldBe Map(
+      repetitionSymbol -> Set(
+        Seq(SimpleGrammar.a, repetitionSymbol),
+        Seq(SimpleGrammar.b, repetitionSymbol),
+        Seq.empty
       )
     )
