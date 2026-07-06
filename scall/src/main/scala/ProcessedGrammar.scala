@@ -11,4 +11,6 @@ type Alternatives = Set[SymbolSeq]
 object Alternatives:
   def ofTerminal(s: Terminal): Alternatives = Set(Seq(s))
   def ofNonterminal(s: Rule): Alternatives = Set(Seq(s))
-  def ofAlternation(t1: Alternatives, t2: Alternatives): Alternatives = t1.union(t2)
+  def ofConcat(t1: Alternatives, t2: Alternatives): Alternatives =
+    for a1 <- t1; a2 <- t2 yield a1 concat a2
+  def ofAlternation(t1: Alternatives, t2: Alternatives): Alternatives = t1 union t2
