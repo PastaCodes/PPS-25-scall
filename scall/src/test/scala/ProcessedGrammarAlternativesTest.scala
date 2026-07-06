@@ -26,6 +26,14 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
       Seq(SimpleGrammar.a), Seq(SimpleGrammar.b)
     )
 
+  /* Given a production S 🡒 α (X | Y) β
+   * Where X 🡒 a | b and Y 🡒 c | d
+   * The result should be:
+   * S 🡒 α a β
+   * S 🡒 α b β
+   * S 🡒 α c β
+   * S 🡒 α d β
+   */
   test("alternation is processed as the union of alternatives"):
     val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
     val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
@@ -44,6 +52,14 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
       Seq(SimpleGrammar.a, SimpleGrammar.b)
     )
 
+  /* Given a production S 🡒 α (X Y) β
+   * Where X 🡒 a | b and Y 🡒 c | d
+   * The result should be:
+   * S 🡒 α a c β
+   * S 🡒 α a d β
+   * S 🡒 α b c β
+   * S 🡒 α b d β
+   */
   test("concatenation is processed as the product of concatenated alternatives"):
     val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
     val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
@@ -65,6 +81,13 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
       Seq()
     )
 
+  /* Given a production S 🡒 α X? β
+   * Where X 🡒 a | b
+   * The result should be:
+   * S 🡒 α a β
+   * S 🡒 α b β
+   * S 🡒 α β
+   */
   test("optional is processed by adding an empty sequence to alternatives"):
     val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
     val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
@@ -75,6 +98,15 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
       Seq()
     )
 
+  /* Given a production S 🡒 α X* β
+   * Where X 🡒 a | b
+   * The result should be:
+   * S 🡒 α R β
+   * Where R is (see productions test):
+   * R 🡒 a R
+   * R 🡒 b R
+   * R 🡒 ε
+   */
   test("zeroOrMore is processed as a single alternative"):
     val repetitionSymbol = InternalNonterminal()
     Alternatives.ofZeroOrMore(repetitionSymbol) shouldBe Set(
@@ -88,6 +120,16 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
       Seq(SimpleGrammar.a, repetitionSymbol)
     )
 
+  /* Given a production S 🡒 α X* β
+   * Where X 🡒 a | b
+   * The result should be:
+   * S 🡒 α a R β
+   * S 🡒 α b R β
+   * Where R is (see productions test):
+   * R 🡒 a R
+   * R 🡒 b R
+   * R 🡒 ε
+   */
   test("oneOrMore is process by concatenating repetition to all alternatives"):
     val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
     val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
