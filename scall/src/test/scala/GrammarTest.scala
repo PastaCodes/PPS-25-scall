@@ -33,10 +33,10 @@ class GrammarTest extends AnyFunSuite:
 
   // noinspection ForwardReference
   object ArithmeticGrammar extends Grammar:
-    val expression: NonTerminal = -> (term ++ (plus ++ expression).?)
-    val term: NonTerminal = -> (digit.+)
+    val expression: Nonterminal = -> (term ++ (plus ++ expression).?)
+    val term: Nonterminal = -> (digit.+)
     val plus: Terminal = -> ("+")
-    val digit: NonTerminal = -> (zero | one)
+    val digit: Nonterminal = -> (zero | one)
     val zero: Terminal = -> ("0")
     val one: Terminal = -> ("1")
 
