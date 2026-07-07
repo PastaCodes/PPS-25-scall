@@ -5,7 +5,7 @@ import org.scalatest.matchers.should.Matchers.*
 
 class ProcessedGrammarAlternativesTest extends AnyFunSuite:
 
-  // noinspection TypeAnnotation, ForwardReference
+  // noinspection ForwardReference, TypeAnnotation
   object SimpleGrammar extends Grammar:
     val start = -> (a | b)
     val a = -> ("a")

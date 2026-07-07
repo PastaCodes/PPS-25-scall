@@ -5,7 +5,7 @@ import org.scalatest.matchers.should.Matchers.*
 
 class ProcessedGrammarProductionsTest extends AnyFunSuite:
 
-  // noinspection TypeAnnotation, ForwardReference
+  // noinspection ForwardReference, TypeAnnotation
   object SimpleGrammar extends Grammar:
     val start = -> (a | b)
     val a = -> ("a")
@@ -21,7 +21,7 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
     val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
     val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
     val alt = Alternatives.ofAlternation(aAlt, bAlt)
-    Productions.ofNonTerminal(SimpleGrammar.start, alt) shouldBe Map(
+    Productions.ofNonterminal(SimpleGrammar.start, alt) shouldBe Map(
       SimpleGrammar.start -> Set(
         Seq(SimpleGrammar.a),
         Seq(SimpleGrammar.b)

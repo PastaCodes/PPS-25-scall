@@ -2,13 +2,18 @@ package it.unibo.scall
 
 import Element.*
 
+type MultiMap[K, V] = Map[K, Set[V]]
+
 case class InternalNonterminal()
 type Symbol = Terminal | Rule
 type AnyNonterminal = Rule | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal
 type SymbolSeq = Seq[AnySymbol]
 type Alternatives = Set[SymbolSeq]
-type Productions = Map[AnyNonterminal, Alternatives]
+type Productions = MultiMap[AnyNonterminal, SymbolSeq]
+type PartialFollowings = MultiMap[AnyNonterminal, SymbolSeq]
+case class Following(productionHead: AnyNonterminal, followingSeq: SymbolSeq)
+type Followings = MultiMap[AnyNonterminal, Following]
 
 object Alternatives:
   def ofSymbol(s: Symbol): Alternatives                                     = Set(Seq(s))
@@ -19,10 +24,14 @@ object Alternatives:
   def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives  = t.map(_ appended rep)
 
 object Productions:
-  def ofNonTerminal(s: Rule, b: Alternatives): Productions =
+  def ofNonterminal(s: Rule, b: Alternatives): Productions =
     Map(s -> b)
   def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
     Map(rep -> (t.map(_ appended rep) incl Seq.empty))
+
+object PartialFollowings:
+  def ofNonterminal(s: Rule): PartialFollowings =
+    Map(s -> Set(Seq.empty))
 
 extension [A](self: Set[Seq[A]])
   infix def productConcat(other: Set[Seq[A]]): Set[Seq[A]] =
