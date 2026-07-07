@@ -4,8 +4,8 @@ import Element.*
 
 type MultiMap[K, V] = Map[K, Set[V]]
 
-case class InternalNonterminal()
 type Symbol = Terminal | Rule
+case class InternalNonterminal()
 type AnyNonterminal = Rule | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal
 type SymbolSeq = Seq[AnySymbol]
@@ -21,13 +21,13 @@ object Alternatives:
   def ofAlternation(t1: Alternatives, t2: Alternatives): Alternatives       = t1 union t2
   def ofOptional(t: Alternatives): Alternatives                             = t incl Seq.empty
   def ofZeroOrMore(rep: InternalNonterminal): Alternatives                  = Set(Seq(rep))
-  def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives  = t.map(_ appended rep)
+  def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives  = t eachAppend rep
 
 object Productions:
   def ofNonterminal(s: Rule, b: Alternatives): Productions =
     Map(s -> b)
   def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
-    Map(rep -> (t.map(_ appended rep) incl Seq.empty))
+    Map(rep -> (t eachAppend rep incl Seq.empty))
 
 object PartialFollowings:
   def ofNonterminal(s: Rule): PartialFollowings =
@@ -36,8 +36,16 @@ object PartialFollowings:
     f1.map((k, v) => (k, v productConcat t2)) concat f2
   def ofAlternation(f1: PartialFollowings, f2: PartialFollowings): PartialFollowings =
     f1 unionAll f2
+  def ofOptional(f: PartialFollowings): PartialFollowings =
+    f
+  def ofZeroOrMore(rep: InternalNonterminal): PartialFollowings =
+    Map(rep -> Set(Seq.empty))
+  def ofOneOrMore(f: PartialFollowings, rep: InternalNonterminal): PartialFollowings =
+    f.map((k, v) => (k, v eachAppend rep)) updated (rep, Set(Seq.empty))
 
 extension [A](self: Set[Seq[A]])
+  infix def eachAppend(e: A): Set[Seq[A]] =
+    self.map(_ appended e)
   infix def productConcat(other: Set[Seq[A]]): Set[Seq[A]] =
     for
       x <- self
