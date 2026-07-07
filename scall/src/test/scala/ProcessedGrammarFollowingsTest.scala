@@ -3,7 +3,7 @@ package it.unibo.scall
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 
-class ProcessGrammarFollowingsTest extends AnyFunSuite:
+class ProcessedGrammarFollowingsTest extends AnyFunSuite:
 
   // noinspection ForwardReference, TypeAnnotation
   object SimpleGrammar extends Grammar:
@@ -21,7 +21,7 @@ class ProcessGrammarFollowingsTest extends AnyFunSuite:
    * A: B       (head = X)
    * B: ε       (head = X)
    */
-  test("nonterminal rule is processed to turn partial followings into followings"):
+  test("nonterminal rule is processed by turning partial followings into followings"):
     val aPartials = PartialFollowings.ofNonterminal(SimpleGrammar.A)
     val bAlt = Alternatives.ofSymbol(SimpleGrammar.B)
     val bPartials = PartialFollowings.ofNonterminal(SimpleGrammar.B)
@@ -39,7 +39,7 @@ class ProcessGrammarFollowingsTest extends AnyFunSuite:
    * X: C       (head = Y)
    * C: ε       (head = Y)
    */
-  test("nonterminal rule is processed to preserve inner followings"):
+  test("nonterminal rule is processed by preserving inner followings"):
     val aPartials = PartialFollowings.ofNonterminal(SimpleGrammar.A)
     val bAlt = Alternatives.ofSymbol(SimpleGrammar.B)
     val bPartials = PartialFollowings.ofNonterminal(SimpleGrammar.B)
@@ -54,4 +54,27 @@ class ProcessGrammarFollowingsTest extends AnyFunSuite:
       SimpleGrammar.B -> Set(Following(SimpleGrammar.X, Seq.empty)),
       SimpleGrammar.X -> Set(Following(SimpleGrammar.Y, Seq(SimpleGrammar.C))),
       SimpleGrammar.C -> Set(Following(SimpleGrammar.Y, Seq.empty))
+    )
+
+  /* Given the sequence (A B)*
+   * The followings should be:
+   * A: B R     (head = R)
+   * B: R       (head = R)
+   * R: ε       (head = R)
+   * Where R is (see productions test):
+   * R 🡒 A B R
+   * R 🡒 ε
+   */
+  test("zeroOrMore is processed by updating followings for repetition"):
+    val aPartials = PartialFollowings.ofNonterminal(SimpleGrammar.A)
+    val bAlt = Alternatives.ofSymbol(SimpleGrammar.B)
+    val bPartials = PartialFollowings.ofNonterminal(SimpleGrammar.B)
+    val abPartials = PartialFollowings.ofConcat(aPartials, bPartials, bAlt)
+    val aAlt = Alternatives.ofSymbol(SimpleGrammar.A)
+    val abAlt = Alternatives.ofConcat(aAlt, bAlt)
+    val repetitionSymbol = InternalNonterminal()
+    Followings.ofOrMore(abPartials, repetitionSymbol, abAlt) shouldBe Map(
+      SimpleGrammar.A -> Set(Following(repetitionSymbol, Seq(SimpleGrammar.B, repetitionSymbol))),
+      SimpleGrammar.B -> Set(Following(repetitionSymbol, Seq(repetitionSymbol))),
+      repetitionSymbol -> Set(Following(repetitionSymbol, Seq.empty))
     )

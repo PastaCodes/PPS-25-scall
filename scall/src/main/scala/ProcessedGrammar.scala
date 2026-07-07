@@ -33,7 +33,7 @@ object PartialFollowings:
   def ofNonterminal(s: Rule): PartialFollowings =
     Map(s -> Set(Seq.empty))
   def ofConcat(p1: PartialFollowings, p2: PartialFollowings, t2: Alternatives): PartialFollowings =
-    p1.map((k, v) => (k, v productConcat t2)) concat p2
+    p1.mapValues1(_ productConcat t2) concat p2
   def ofAlternation(p1: PartialFollowings, p2: PartialFollowings): PartialFollowings =
     p1 unionAll p2
   def ofOptional(p: PartialFollowings): PartialFollowings =
@@ -41,11 +41,13 @@ object PartialFollowings:
   def ofZeroOrMore(rep: InternalNonterminal): PartialFollowings =
     Map(rep -> Set(Seq.empty))
   def ofOneOrMore(p: PartialFollowings, rep: InternalNonterminal): PartialFollowings =
-    p.map((k, v) => (k, v eachAppend rep)) updated (rep, Set(Seq.empty))
+    p.mapValues1(_ eachAppend rep) updated (rep, Set(Seq.empty))
 
 object Followings:
   def ofNonterminal(s: Rule, p: PartialFollowings, f: Followings): Followings =
     f unionAll p.mapValues1(_.map(Following(s, _)))
+  def ofOrMore(p: PartialFollowings, rep: InternalNonterminal, t: Alternatives): Followings =
+    p.mapValues1(_.map(q => Following(rep, q appended rep))) updated (rep, Set(Following(rep, Seq.empty)))
 
 extension [A](self: Set[Seq[A]])
   infix def eachAppend(e: A): Set[Seq[A]] =

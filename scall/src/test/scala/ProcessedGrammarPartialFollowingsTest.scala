@@ -121,8 +121,8 @@ class ProcessedGrammarPartialFollowingsTest extends AnyFunSuite:
    * R: C
    * C: ε
    * Where R is (see productions test):
-   * R 🡒 A
-   * R 🡒 B
+   * R 🡒 A R
+   * R 🡒 B R
    * R 🡒 ε
    */
   test("oneOrMore is processed by updating partial followings for repetition"):
