@@ -32,16 +32,20 @@ object Productions:
 object PartialFollowings:
   def ofNonterminal(s: Rule): PartialFollowings =
     Map(s -> Set(Seq.empty))
-  def ofConcat(f1: PartialFollowings, f2: PartialFollowings, t2: Alternatives): PartialFollowings =
-    f1.map((k, v) => (k, v productConcat t2)) concat f2
-  def ofAlternation(f1: PartialFollowings, f2: PartialFollowings): PartialFollowings =
-    f1 unionAll f2
-  def ofOptional(f: PartialFollowings): PartialFollowings =
-    f
+  def ofConcat(p1: PartialFollowings, p2: PartialFollowings, t2: Alternatives): PartialFollowings =
+    p1.map((k, v) => (k, v productConcat t2)) concat p2
+  def ofAlternation(p1: PartialFollowings, p2: PartialFollowings): PartialFollowings =
+    p1 unionAll p2
+  def ofOptional(p: PartialFollowings): PartialFollowings =
+    p
   def ofZeroOrMore(rep: InternalNonterminal): PartialFollowings =
     Map(rep -> Set(Seq.empty))
-  def ofOneOrMore(f: PartialFollowings, rep: InternalNonterminal): PartialFollowings =
-    f.map((k, v) => (k, v eachAppend rep)) updated (rep, Set(Seq.empty))
+  def ofOneOrMore(p: PartialFollowings, rep: InternalNonterminal): PartialFollowings =
+    p.map((k, v) => (k, v eachAppend rep)) updated (rep, Set(Seq.empty))
+
+object Followings:
+  def ofNonterminal(s: Rule, p: PartialFollowings, f: Followings): Followings =
+    f unionAll p.mapValues1(_.map(Following(s, _)))
 
 extension [A](self: Set[Seq[A]])
   infix def eachAppend(e: A): Set[Seq[A]] =
@@ -55,6 +59,10 @@ extension [A](self: Set[Seq[A]])
 extension [K](self: Set[K])
   def associateWith[V](valueSelector: K => V): Map[K, V] =
     self.map(k => k -> valueSelector(k)).toMap
+
+extension [K, V](self: Map[K, V])
+  def mapValues1[W](transform: V => W): Map[K, W] =
+    self.map((k, v) => (k, transform(v)))
 
 extension [K, V](self: MultiMap[K, V])
   def getOrEmpty(key: K): Set[V] =
