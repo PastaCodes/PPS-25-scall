@@ -7,9 +7,14 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
 
   // noinspection ForwardReference, TypeAnnotation
   object SimpleGrammar extends Grammar:
-    val start = -> (a | b)
+    val X = -> (a | b)
     val a = -> ("a")
     val b = -> ("b")
+
+  import SimpleGrammar.*
+
+  test("terminal is processed without adding productions"):
+    ProcessedGrammar.visit(a).productions shouldBe empty
 
   /* Given a production S 🡒 α X β
    * Where X 🡒 a | b
@@ -18,18 +23,23 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
    * X 🡒 b
    */
   test("nonterminal is processed as productions for all rule body alternatives"):
-    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
-    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
-    val alt = Alternatives.ofAlternation(aAlt, bAlt)
-    Productions.ofNonterminal(SimpleGrammar.start, alt) shouldBe Map(
-      SimpleGrammar.start -> Set(
-        Seq(SimpleGrammar.a),
-        Seq(SimpleGrammar.b)
+    ProcessedGrammar.visit(X).productions shouldBe Map(
+      X -> Set(
+        Seq(a),
+        Seq(b)
       )
     )
 
-  /* Given a production S 🡒 α X* β
-   * Where X 🡒 a | b
+  test("concatenation is processed without adding productions"):
+    ProcessedGrammar.visit(a ++ b).productions shouldBe empty
+
+  test("alternation is processed without adding productions"):
+    ProcessedGrammar.visit(a | b).productions shouldBe empty
+
+  test("optional is processed without adding productions"):
+    ProcessedGrammar.visit(a.?).productions shouldBe empty
+
+  /* Given a production S 🡒 α (a | b)* β
    * The additional productions should be:
    * R 🡒 a R
    * R 🡒 b R
@@ -38,20 +48,16 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
    * S 🡒 α R β
    */
   test("zeroOrMore is processed as productions concatenating repetition and adding empty production"):
-    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
-    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
-    val alt = Alternatives.ofAlternation(aAlt, bAlt)
-    val repetitionSymbol = InternalNonterminal()
-    Productions.ofOrMore(alt, repetitionSymbol) shouldBe Map(
-      repetitionSymbol -> Set(
-        Seq(SimpleGrammar.a, repetitionSymbol),
-        Seq(SimpleGrammar.b, repetitionSymbol),
+    ProcessedGrammar.visit((a | b).*).productions.toSeq should matchPattern:
+      case Seq(
+        (repetitionSymbol: InternalNonterminal) -> sequences
+      ) if sequences == Set(
+        Seq(a, repetitionSymbol),
+        Seq(b, repetitionSymbol),
         Seq.empty
-      )
-    )
+      ) =>
 
-  /* Given a production S 🡒 α X+ β
-   * Where X 🡒 a | b
+  /* Given a production S 🡒 α (a | b)+ β
    * The additional productions should be:
    * R 🡒 a R
    * R 🡒 b R
@@ -61,14 +67,11 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
    * S 🡒 α b R β
    */
   test("oneOrMore is processed as productions concatenating repetition and adding empty production"):
-    val aAlt = Alternatives.ofSymbol(SimpleGrammar.a)
-    val bAlt = Alternatives.ofSymbol(SimpleGrammar.b)
-    val alt = Alternatives.ofAlternation(aAlt, bAlt)
-    val repetitionSymbol = InternalNonterminal()
-    Productions.ofOrMore(alt, repetitionSymbol) shouldBe Map(
-      repetitionSymbol -> Set(
-        Seq(SimpleGrammar.a, repetitionSymbol),
-        Seq(SimpleGrammar.b, repetitionSymbol),
+    ProcessedGrammar.visit((a | b).+).productions.toSeq should matchPattern:
+      case Seq(
+        (repetitionSymbol: InternalNonterminal) -> sequences
+      ) if sequences == Set(
+        Seq(a, repetitionSymbol),
+        Seq(b, repetitionSymbol),
         Seq.empty
-      )
-    )
+      ) =>
