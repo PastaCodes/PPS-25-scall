@@ -17,7 +17,6 @@ case class ProcessedGrammar(terminals: Set[Terminal],
                             followings: Followings)
 
 case class VisitResult(alternatives: Alternatives,
-                       terminals: Set[Terminal] = Set.empty,
                        nonterminals: Set[Nonterminal] = Set.empty,
                        productions: Productions = Map.empty,
                        partialFollowings: PartialFollowings = Map.empty,
@@ -27,12 +26,10 @@ object ProcessedGrammar:
   
   def of(startSymbol: Nonterminal): ProcessedGrammar =
     val res = visit(startSymbol)
-    ProcessedGrammar(res.terminals, res.productions, res.followings)
+    ProcessedGrammar(???, res.productions, res.followings)
   
-  def visit(e: Element,
-            skipTerminals: Set[Terminal] = Set.empty,
-            skipNonterminals: Set[Nonterminal] = Set.empty): VisitResult =
-    given Set[Terminal] = skipTerminals; given Set[Nonterminal] = skipNonterminals
+  def visit(e: Element, skipNonterminals: Set[Nonterminal] = Set.empty): VisitResult =
+    given Set[Nonterminal] = skipNonterminals
     
     e match
 
@@ -40,10 +37,7 @@ object ProcessedGrammar:
         VisitResult(alternatives = Alternatives.ofEps)
       
       case s: Terminal =>
-        if !skipTerminals.contains(s) then
-          VisitResult(alternatives = Alternatives.ofSymbol(s), terminals = Set(s))
-        else
-          VisitResult(alternatives = Alternatives.ofSymbol(s))
+        VisitResult(alternatives = Alternatives.ofSymbol(s))
       
       case s: Nonterminal =>
         if !skipNonterminals.contains(s) then
@@ -103,11 +97,10 @@ object ProcessedGrammar:
                          addProductionsFn: VisitResult => Productions = _ => Map.empty,
                          partialFollowingsFn: VisitResult => PartialFollowings,
                          addFollowingsFn: VisitResult => Followings = _ => Map.empty)
-                        (using skipTerminals: Set[Terminal], skipNonterminals: Set[Nonterminal]): VisitResult =
-    val v = ProcessedGrammar.visit(t, skipTerminals, skipNonterminals)
+                        (using skipNonterminals: Set[Nonterminal]): VisitResult =
+    val v = ProcessedGrammar.visit(t, skipNonterminals)
     VisitResult(
       alternativesFn(v),
-      v.terminals union addTerminals,
       v.nonterminals union addNonterminals,
       v.productions unionAll addProductionsFn(v),
       partialFollowingsFn(v),
@@ -117,12 +110,11 @@ object ProcessedGrammar:
   private def visitBinary(t1: Element, t2: Element)
                          (alternativesFn: (VisitResult, VisitResult) => Alternatives,
                           partialFollowingsFn: (VisitResult, VisitResult) => PartialFollowings)
-                         (using skipTerminals: Set[Terminal], skipNonterminals: Set[Nonterminal]): VisitResult =
-    val v1 = ProcessedGrammar.visit(t1, skipTerminals, skipNonterminals)
-    val v2 = ProcessedGrammar.visit(t2, skipTerminals union v1.terminals, skipNonterminals union v1.nonterminals)
+                         (using skipNonterminals: Set[Nonterminal]): VisitResult =
+    val v1 = ProcessedGrammar.visit(t1, skipNonterminals)
+    val v2 = ProcessedGrammar.visit(t2, skipNonterminals union v1.nonterminals)
     VisitResult(
       alternativesFn(v1, v2),
-      v1.terminals union v2.terminals,
       v1.nonterminals union v2.nonterminals,
       v1.productions unionAll v2.productions,
       partialFollowingsFn(v1, v2),
