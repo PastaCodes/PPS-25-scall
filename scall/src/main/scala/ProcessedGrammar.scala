@@ -2,7 +2,7 @@ package it.unibo.scall
 
 import Element.*
 
-case class InternalNonterminal()
+class InternalNonterminal
 type AnyNonterminal = Nonterminal | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal
 type SymbolSeq = Seq[AnySymbol]
@@ -24,9 +24,9 @@ case class VisitResult(alternatives: Alternatives,
 
 object ProcessedGrammar:
   
-  def of(startSymbol: Nonterminal): ProcessedGrammar =
+  def of(g: Grammar, startSymbol: Nonterminal): ProcessedGrammar =
     val res = visit(startSymbol)
-    ProcessedGrammar(???, res.productions, res.followings)
+    ProcessedGrammar(g.terminals, res.productions, res.followings)
   
   def visit(e: Element, skipNonterminals: Set[Nonterminal] = Set.empty): VisitResult =
     given Set[Nonterminal] = skipNonterminals
