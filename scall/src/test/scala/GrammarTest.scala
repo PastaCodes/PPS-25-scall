@@ -6,9 +6,9 @@ import Element.*
 
 class GrammarTest extends AnyFunSuite:
 
-  val a = Terminal("a")
-  val b = Terminal("b")
-  val c = Terminal("c")
+  val a = TextTerminal("a")
+  val b = TextTerminal("b")
+  val c = TextTerminal("c")
 
   test("++ concatenates two element"):
     (a ++ b) shouldBe Concat(a,b)
@@ -31,25 +31,29 @@ class GrammarTest extends AnyFunSuite:
   test("++ binds tighter then |, as in EBNF"):
     (a ++ b | c ++ a) shouldBe Alternation(Concat(a, b), Concat(c, a))
 
+  // noinspection ForwardReference
   object ArithmeticGrammar extends Grammar:
-    val expression: Rule = ->(term ++ (plus ++ expression).?)
-    val term: Rule = -> (digit.+)
+    val expression: Nonterminal = -> (term ++ (plus ++ expression).?)
+    val term: Nonterminal = -> (digit.+)
     val plus: Terminal = -> ("+")
-    val digit: Rule = -> (zero | one)
+    val digit: Nonterminal = -> (zero | one)
     val zero: Terminal = -> ("0")
     val one: Terminal = -> ("1")
 
   test("-> create a terminal from a string"):
-    ArithmeticGrammar.plus shouldBe Terminal("+")
+    ArithmeticGrammar.plus shouldBe TextTerminal("+")
+
+  test("-> create a terminal from a regular expression"):
+    ??? // TODO
 
   test("-> create a rule with a lazily evaluated body"):
-    ArithmeticGrammar.digit.body() shouldBe Alternation(Terminal("0"), Terminal("1"))
+    ArithmeticGrammar.digit.rule() shouldBe Alternation(TextTerminal("0"), TextTerminal("1"))
 
   test("a rule can reference rules defined after it"):
-    ArithmeticGrammar.term.body() shouldBe OneOrMore(ArithmeticGrammar.digit)
+    ArithmeticGrammar.term.rule() shouldBe OneOrMore(ArithmeticGrammar.digit)
 
   test("a rule can reference itself without looping"):
-    ArithmeticGrammar.expression.body() shouldBe Concat(
+    ArithmeticGrammar.expression.rule() shouldBe Concat(
       ArithmeticGrammar.term,
       Optional(Concat(ArithmeticGrammar.plus, ArithmeticGrammar.expression))
     )
