@@ -2,7 +2,6 @@ package it.unibo.scall
 
 import Element.*
 
-type Symbol = Terminal | Nonterminal
 case class InternalNonterminal()
 type AnyNonterminal = Nonterminal | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal

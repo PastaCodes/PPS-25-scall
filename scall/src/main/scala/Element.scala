@@ -14,7 +14,8 @@ enum Element:
   case OneOrMore(inner: Element)
 
 object Element:
-  type Terminal = Element.TextTerminal | Element.RegexTerminal
+  type Terminal = TextTerminal | RegexTerminal
+  type Symbol = Terminal | Nonterminal
   
   extension (element: Element)
     def ++(other: Element): Concat = Concat(element, other)
