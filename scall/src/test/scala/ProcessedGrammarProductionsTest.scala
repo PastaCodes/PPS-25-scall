@@ -13,6 +13,9 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
 
   import SimpleGrammar.*
 
+  test("ε is processed without adding productions"):
+    ProcessedGrammar.visit(Element.Eps).productions shouldBe empty
+
   test("terminal is processed without adding productions"):
     ProcessedGrammar.visit(a).productions shouldBe empty
 

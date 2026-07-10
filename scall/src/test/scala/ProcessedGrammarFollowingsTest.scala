@@ -15,6 +15,9 @@ class ProcessedGrammarFollowingsTest extends AnyFunSuite:
 
   import SimpleGrammar.*
 
+  test("ε is processed without adding followings"):
+    ProcessedGrammar.visit(Element.Eps).followings shouldBe empty
+
   test("terminal is processed without adding followings"):
     ProcessedGrammar.visit(a).followings shouldBe empty
 

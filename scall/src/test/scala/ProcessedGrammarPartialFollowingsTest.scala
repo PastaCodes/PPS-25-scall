@@ -18,7 +18,10 @@ class ProcessedGrammarPartialFollowingsTest extends AnyFunSuite:
 
   import SimpleGrammar.*
 
-  test("terminal is processed without adding partial followings"):
+  test("ε is processed without creating partial followings"):
+    ProcessedGrammar.visit(Element.Eps).partialFollowings shouldBe empty
+
+  test("terminal is processed without creating partial followings"):
     ProcessedGrammar.visit(a).partialFollowings shouldBe empty
 
   test("nonterminal is processed as a single empty partial following"):

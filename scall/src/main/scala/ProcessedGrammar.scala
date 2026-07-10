@@ -2,9 +2,9 @@ package it.unibo.scall
 
 import Element.*
 
-type Symbol = Terminal | Rule
+type Symbol = Terminal | Nonterminal
 case class InternalNonterminal()
-type AnyNonterminal = Rule | InternalNonterminal
+type AnyNonterminal = Nonterminal | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal
 type SymbolSeq = Seq[AnySymbol]
 type Alternatives = Set[SymbolSeq]
@@ -19,23 +19,26 @@ case class ProcessedGrammar(terminals: Set[Terminal],
 
 case class VisitResult(alternatives: Alternatives,
                        terminals: Set[Terminal] = Set.empty,
-                       nonterminals: Set[Rule] = Set.empty,
+                       nonterminals: Set[Nonterminal] = Set.empty,
                        productions: Productions = Map.empty,
                        partialFollowings: PartialFollowings = Map.empty,
                        followings: Followings = Map.empty)
 
 object ProcessedGrammar:
   
-  def of(startSymbol: Rule): ProcessedGrammar =
+  def of(startSymbol: Nonterminal): ProcessedGrammar =
     val res = visit(startSymbol)
     ProcessedGrammar(res.terminals, res.productions, res.followings)
   
   def visit(e: Element,
             skipTerminals: Set[Terminal] = Set.empty,
-            skipNonterminals: Set[Rule] = Set.empty): VisitResult =
-    given Set[Terminal] = skipTerminals; given Set[Rule] = skipNonterminals
+            skipNonterminals: Set[Nonterminal] = Set.empty): VisitResult =
+    given Set[Terminal] = skipTerminals; given Set[Nonterminal] = skipNonterminals
     
     e match
+
+      case Eps =>
+        VisitResult(alternatives = Alternatives.ofEps)
       
       case s: Terminal =>
         if !skipTerminals.contains(s) then
@@ -43,9 +46,9 @@ object ProcessedGrammar:
         else
           VisitResult(alternatives = Alternatives.ofSymbol(s))
       
-      case s: Rule =>
+      case s: Nonterminal =>
         if !skipNonterminals.contains(s) then
-          visitUnary(s.body())(
+          visitUnary(s.rule())(
             alternativesFn      = _ => Alternatives.ofSymbol(s),
             addNonterminals     = Set(s),
             addProductionsFn    = v => Productions.ofNonterminal(s, v.alternatives),
@@ -97,11 +100,11 @@ object ProcessedGrammar:
   private def visitUnary(t: Element)
                         (alternativesFn: VisitResult => Alternatives,
                          addTerminals: Set[Terminal] = Set.empty,
-                         addNonterminals: Set[Rule] = Set.empty,
+                         addNonterminals: Set[Nonterminal] = Set.empty,
                          addProductionsFn: VisitResult => Productions = _ => Map.empty,
                          partialFollowingsFn: VisitResult => PartialFollowings,
                          addFollowingsFn: VisitResult => Followings = _ => Map.empty)
-                        (using skipTerminals: Set[Terminal], skipNonterminals: Set[Rule]): VisitResult =
+                        (using skipTerminals: Set[Terminal], skipNonterminals: Set[Nonterminal]): VisitResult =
     val v = ProcessedGrammar.visit(t, skipTerminals, skipNonterminals)
     VisitResult(
       alternativesFn(v),
@@ -115,7 +118,7 @@ object ProcessedGrammar:
   private def visitBinary(t1: Element, t2: Element)
                          (alternativesFn: (VisitResult, VisitResult) => Alternatives,
                           partialFollowingsFn: (VisitResult, VisitResult) => PartialFollowings)
-                         (using skipTerminals: Set[Terminal], skipNonterminals: Set[Rule]): VisitResult =
+                         (using skipTerminals: Set[Terminal], skipNonterminals: Set[Nonterminal]): VisitResult =
     val v1 = ProcessedGrammar.visit(t1, skipTerminals, skipNonterminals)
     val v2 = ProcessedGrammar.visit(t2, skipTerminals union v1.terminals, skipNonterminals union v1.nonterminals)
     VisitResult(
@@ -128,6 +131,7 @@ object ProcessedGrammar:
     )
 
 object Alternatives:
+  def ofEps: Alternatives                                                   = Set(Seq.empty)
   def ofSymbol(s: Symbol): Alternatives                                     = Set(Seq(s))
   def ofConcat(t1: Alternatives, t2: Alternatives): Alternatives            = t1 productConcat t2
   def ofAlternation(t1: Alternatives, t2: Alternatives): Alternatives       = t1 union t2
@@ -136,13 +140,13 @@ object Alternatives:
   def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives  = t eachAppend rep
 
 object Productions:
-  def ofNonterminal(s: Rule, b: Alternatives): Productions =
+  def ofNonterminal(s: Nonterminal, b: Alternatives): Productions =
     Map(s -> b)
   def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
     Map(rep -> (t eachAppend rep incl Seq.empty))
 
 object PartialFollowings:
-  def ofNonterminal(s: Rule): PartialFollowings =
+  def ofNonterminal(s: Nonterminal): PartialFollowings =
     Map(s -> Set(Seq.empty))
   def ofConcat(p1: PartialFollowings, p2: PartialFollowings, t2: Alternatives): PartialFollowings =
     p1.mapValues1(_ productConcat t2) concat p2
@@ -156,7 +160,7 @@ object PartialFollowings:
     p.mapValues1(_ eachAppend rep) updated (rep, Set(Seq.empty))
 
 object Followings:
-  def ofNonterminal(s: Rule, p: PartialFollowings): Followings =
+  def ofNonterminal(s: Nonterminal, p: PartialFollowings): Followings =
     p.mapValues1(_.map(Following(s, _)))
   def ofOrMore(p: PartialFollowings, rep: InternalNonterminal, t: Alternatives): Followings =
     p.mapValues1(_.map(q => Following(rep, q appended rep))) updated (rep, Set(Following(rep, Seq.empty)))

@@ -15,6 +15,11 @@ class ProcessedGrammarAlternativesTest extends AnyFunSuite:
 
   import SimpleGrammar.*
 
+  test("ε is processed as a single empty alternative"):
+    ProcessedGrammar.visit(Element.Eps).alternatives shouldBe Set(
+      Seq.empty
+    )
+
   test("terminal is processed as a single alternative"):
     ProcessedGrammar.visit(a).alternatives shouldBe Set(
       Seq(a)
