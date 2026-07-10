@@ -1,8 +1,12 @@
 package it.unibo.scall
 
+import scala.util.matching.Regex
+
 enum Element:
-  case Terminal(text: String)
-  case Rule(body: () => Element)
+  case Eps
+  case TextTerminal(text: String)
+  case RegexTerminal(regex: Regex)
+  case Nonterminal(rule: () => Element)
   case Concat(first: Element, second: Element)
   case Alternation(first: Element, second: Element)
   case Optional(inner: Element)
@@ -10,9 +14,11 @@ enum Element:
   case OneOrMore(inner: Element)
 
 object Element:
+  type Terminal = Element.TextTerminal | Element.RegexTerminal
+  
   extension (element: Element)
-    def ++(other: Element): Element = Concat(element, other)
-    def |(other: Element): Element = Alternation(element, other)
-    def ? : Element = Optional(element)
-    def * : Element = ZeroOrMore(element)
-    def + : Element = OneOrMore(element)
+    def ++(other: Element): Concat = Concat(element, other)
+    def |(other: Element): Alternation = Alternation(element, other)
+    def ? : Optional = Optional(element)
+    def * : ZeroOrMore = ZeroOrMore(element)
+    def + : OneOrMore = OneOrMore(element)
