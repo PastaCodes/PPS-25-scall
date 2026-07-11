@@ -1,11 +1,9 @@
 package it.unibo.scall
 
-import scala.util.matching.Regex
-
 enum Element:
   case Eps
   case TextTerminal(text: String)
-  case RegexTerminal(regex: Regex)
+  case RegexTerminal(pattern: String)
   case Nonterminal(rule: () => Element)
   case Concat(first: Element, second: Element)
   case Alternation(first: Element, second: Element)

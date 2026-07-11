@@ -13,7 +13,7 @@ open class Grammar:
     Nonterminal(() => body)
 
   protected def ->(regex: Regex): RegexTerminal =
-    val s: RegexTerminal = RegexTerminal(regex)
+    val s: RegexTerminal = RegexTerminal(regex.regex)
     this._terminals += s
     s
 
