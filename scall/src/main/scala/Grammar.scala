@@ -2,12 +2,11 @@ package it.unibo.scall
 
 import Element.*
 
-import scala.collection.mutable
 import scala.util.matching.Regex
 
 open class Grammar:
 
-  private val _terminals = mutable.Set.empty[Terminal]
+  private var _terminals = Set.empty[Terminal]
 
   protected def ->(body: => Element): Nonterminal =
     Nonterminal(() => body)
@@ -22,4 +21,4 @@ open class Grammar:
     this._terminals += s
     s
 
-  def terminals: Set[Terminal] = _terminals.toSet
+  def terminals: Set[Terminal] = _terminals
