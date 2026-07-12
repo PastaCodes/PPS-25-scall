@@ -7,9 +7,11 @@ import Element.*
 
 class GrammarTest extends AnyFunSuite:
 
-  val a = Terminal("a".r)
-  val b = Terminal("b".r)
-  val c = Terminal("c".r)
+  private def terminal(text: String): Terminal = Terminal(text, text.r)
+
+  val a: Terminal = terminal("a")
+  val b: Terminal = terminal("b")
+  val c: Terminal = terminal("c")
 
   test("++ concatenates two elements"):
     (a ++ b) shouldBe Concat(a,b)
@@ -42,6 +44,14 @@ class GrammarTest extends AnyFunSuite:
     val one: Terminal = -> ("1")
     val number: Terminal = -> ("[0-9]+".r)
 
+  object DuplicateGrammar extends Grammar:
+    val p1: Terminal = ->("[ab]".r)
+    val p2: Terminal = ->("[ab]".r)
+
+  test("-> captures the name of the val being defined"):
+    ArithmeticGrammar.plus.name shouldBe "plus"
+    ArithmeticGrammar.number.name shouldBe "number"
+
   test("-> create a terminal from a string"):
     ArithmeticGrammar.plus.regex.regex shouldBe Regex.quote("+")
 
@@ -61,11 +71,12 @@ class GrammarTest extends AnyFunSuite:
     )
 
   test("duplicated terminals are all kept, in declaration order"):
-    object DuplicateGrammar extends Grammar:
-      val p1: Terminal = -> ("[ab]".r)
-      val p2: Terminal = -> ("[ab]".r)
     DuplicateGrammar.p1 should not be DuplicateGrammar.p2
     DuplicateGrammar.terminals shouldBe Seq(DuplicateGrammar.p1, DuplicateGrammar.p2)
+
+  test("duplicated terminals are distinguishable by name"):
+    DuplicateGrammar.p1.name shouldBe "p1"
+    DuplicateGrammar.p2.name shouldBe "p2"
 
   test("a grammar keeps track of the terminals it defines"):
     ArithmeticGrammar.terminals shouldBe Seq(
