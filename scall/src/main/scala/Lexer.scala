@@ -28,4 +28,4 @@ object Lexer:
   extension (t: Terminal)
     def matchPrefix(s: String): Option[String] = t match
       case TextTerminal(text) => Option.when(s.startsWith(text))(text)
-      case _ => None
+      case RegexTerminal(regex) => regex.findPrefixOf(s)

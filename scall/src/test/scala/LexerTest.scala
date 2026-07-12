@@ -18,3 +18,11 @@ class LexerTest extends AnyFunSuite:
     val lexer = Lexer(Seq(ifRule))
     val tokens = lexer.tokenize(input)
     tokens.map(_.lexeme) shouldBe List("if")
+
+  test("Lexer recognize RegexTerminal"):
+    val idPattern: Terminal = RegexTerminal("[a-z]+".r)
+    val input = "test"
+
+    val lexer = Lexer(Seq(idPattern))
+    val tokens = lexer.tokenize(input)
+    tokens.map(_.lexeme) shouldBe List("test")
