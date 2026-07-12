@@ -2,21 +2,22 @@ package it.unibo.scall
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
+import scala.util.matching.Regex
 import Element.*
 
 class GrammarTest extends AnyFunSuite:
 
-  val a = TextTerminal("a")
-  val b = TextTerminal("b")
-  val c = TextTerminal("c")
+  val a = Terminal("a".r)
+  val b = Terminal("b".r)
+  val c = Terminal("c".r)
 
-  test("++ concatenates two element"):
+  test("++ concatenates two elements"):
     (a ++ b) shouldBe Concat(a,b)
 
-  test("++ should be left-associative"):
+  test("++ is left-associative"):
     (a ++ b ++ c) shouldBe Concat(Concat(a, b), c)
 
-  test("| should combines two alternatives"):
+  test("| combines two alternatives"):
     (a | b) shouldBe Alternation(a, b)
 
   test("? makes an element optional"):
@@ -28,7 +29,7 @@ class GrammarTest extends AnyFunSuite:
   test("+ repeats an element one or more times"):
     a.+ shouldBe OneOrMore(a)
 
-  test("++ binds tighter then |, as in EBNF"):
+  test("++ binds tighter than |, as in EBNF"):
     (a ++ b | c ++ a) shouldBe Alternation(Concat(a, b), Concat(c, a))
 
   // noinspection ForwardReference
@@ -39,15 +40,16 @@ class GrammarTest extends AnyFunSuite:
     val digit: Nonterminal = -> (zero | one)
     val zero: Terminal = -> ("0")
     val one: Terminal = -> ("1")
+    val number: Terminal = -> ("[0-9]+".r)
 
   test("-> create a terminal from a string"):
-    ArithmeticGrammar.plus shouldBe TextTerminal("+")
+    ArithmeticGrammar.plus.regex.regex shouldBe Regex.quote("+")
 
   test("-> create a terminal from a regular expression"):
-    ??? // TODO
+    ArithmeticGrammar.number.regex.regex shouldBe "[0-9]+"
 
   test("-> create a rule with a lazily evaluated body"):
-    ArithmeticGrammar.digit.rule() shouldBe Alternation(TextTerminal("0"), TextTerminal("1"))
+    ArithmeticGrammar.digit.rule() shouldBe Alternation(ArithmeticGrammar.zero, ArithmeticGrammar.one)
 
   test("a rule can reference rules defined after it"):
     ArithmeticGrammar.term.rule() shouldBe OneOrMore(ArithmeticGrammar.digit)
@@ -57,3 +59,34 @@ class GrammarTest extends AnyFunSuite:
       ArithmeticGrammar.term,
       Optional(Concat(ArithmeticGrammar.plus, ArithmeticGrammar.expression))
     )
+
+  test("duplicated terminals are all kept, in declaration order"):
+    object DuplicateGrammar extends Grammar:
+      val p1: Terminal = -> ("[ab]".r)
+      val p2: Terminal = -> ("[ab]".r)
+    DuplicateGrammar.p1 should not be DuplicateGrammar.p2
+    DuplicateGrammar.terminals shouldBe Seq(DuplicateGrammar.p1, DuplicateGrammar.p2)
+
+  test("a grammar keeps track of the terminals it defines"):
+    ArithmeticGrammar.terminals shouldBe Seq(
+      ArithmeticGrammar.plus,
+      ArithmeticGrammar.zero,
+      ArithmeticGrammar.one,
+      ArithmeticGrammar.number
+    )
+
+  test("Eps is the empty production"):
+    (a | Eps) shouldBe Alternation(a, Eps)
+
+  test("a rule body can be just Eps"):
+    object EmptyGrammar extends Grammar:
+      val nothing: Nonterminal = -> (Eps)
+    EmptyGrammar.nothing.rule() shouldBe Eps
+
+  test("a regex exposes its pattern as a compiled regex"):
+    ArithmeticGrammar.number.regex.matches("42") shouldBe true
+    ArithmeticGrammar.number.regex.matches("4a") shouldBe false
+
+  test("a regex created from text matches it literally"):
+    ArithmeticGrammar.plus.regex.matches("+") shouldBe true
+    ArithmeticGrammar.plus.regex.matches("++") shouldBe false

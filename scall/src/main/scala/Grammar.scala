@@ -2,24 +2,23 @@ package it.unibo.scall
 
 import Element.*
 
-import scala.collection.mutable
 import scala.util.matching.Regex
 
 open class Grammar:
 
-  private val _terminals = mutable.Set.empty[Terminal]
+  private var _terminals = Vector.empty[Terminal]
 
   protected def ->(body: => Element): Nonterminal =
     Nonterminal(() => body)
 
-  protected def ->(regex: Regex): RegexTerminal =
-    val s: RegexTerminal = RegexTerminal(regex)
-    this._terminals += s
-    s
+  protected def ->(regex: Regex): Terminal =
+    register(Terminal(regex))
 
-  protected def ->(text: String): TextTerminal =
-    val s: TextTerminal = TextTerminal(text)
-    this._terminals += s
-    s
+  protected def ->(text: String): Terminal =
+    register(Terminal(Regex.quote(text).r))
 
-  def terminals: Set[Terminal] = _terminals.toSet
+  private def register(terminal: Terminal): Terminal =
+    _terminals :+= terminal
+    terminal
+
+  def terminals: Seq[Terminal] = _terminals
