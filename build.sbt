@@ -14,6 +14,7 @@ lazy val scall = project
     libraryDependencies ++= Seq(
       "it.unibo.alice.tuprolog" % "2p-core" % "4.1.1",
       "org.scalatest" %% "scalatest" % "3.2.20" % Test,
+      "com.lihaoyi" %% "sourcecode" % "0.4.4",
     ),
   )
 
