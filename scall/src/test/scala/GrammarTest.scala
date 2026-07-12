@@ -2,13 +2,14 @@ package it.unibo.scall
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
+import scala.util.matching.Regex
 import Element.*
 
 class GrammarTest extends AnyFunSuite:
 
-  val a = TextTerminal("a")
-  val b = TextTerminal("b")
-  val c = TextTerminal("c")
+  val a = Terminal("a")
+  val b = Terminal("b")
+  val c = Terminal("c")
 
   test("++ concatenates two elements"):
     (a ++ b) shouldBe Concat(a,b)
@@ -42,13 +43,13 @@ class GrammarTest extends AnyFunSuite:
     val number: Terminal = -> ("[0-9]+".r)
 
   test("-> create a terminal from a string"):
-    ArithmeticGrammar.plus shouldBe TextTerminal("+")
+    ArithmeticGrammar.plus shouldBe Terminal(Regex.quote("+"))
 
   test("-> create a terminal from a regular expression"):
-    ArithmeticGrammar.number shouldBe RegexTerminal("[0-9]+")
+    ArithmeticGrammar.number shouldBe Terminal("[0-9]+")
 
   test("-> create a rule with a lazily evaluated body"):
-    ArithmeticGrammar.digit.rule() shouldBe Alternation(TextTerminal("0"), TextTerminal("1"))
+    ArithmeticGrammar.digit.rule() shouldBe Alternation(Terminal("0"), Terminal("1"))
 
   test("a rule can reference rules defined after it"):
     ArithmeticGrammar.term.rule() shouldBe OneOrMore(ArithmeticGrammar.digit)
@@ -59,16 +60,15 @@ class GrammarTest extends AnyFunSuite:
       Optional(Concat(ArithmeticGrammar.plus, ArithmeticGrammar.expression))
     )
 
-  test("equal terminals are tracked once, whether text or regex"):
+  test("duplicated terminals are all kept, in declaration order"):
     object DuplicateGrammar extends Grammar:
-      val p1: Terminal = -> ("+")
-      val p2: Terminal = -> ("+")
-      val r1: Terminal = -> ("[0-9]+".r)
-      val r2: Terminal = -> ("[0-9]+".r)
-    DuplicateGrammar.terminals shouldBe Set(TextTerminal("+"), RegexTerminal("[0-9]+"))
+      val p1: Terminal = -> ("[ab]".r)
+      val p2: Terminal = -> ("[ab]".r)
+    DuplicateGrammar.p1 shouldBe DuplicateGrammar.p2
+    DuplicateGrammar.terminals shouldBe Seq(DuplicateGrammar.p1, DuplicateGrammar.p2)
 
   test("a grammar keeps track of the terminals it defines"):
-    ArithmeticGrammar.terminals shouldBe Set(
+    ArithmeticGrammar.terminals shouldBe Seq(
       ArithmeticGrammar.plus,
       ArithmeticGrammar.zero,
       ArithmeticGrammar.one,

@@ -2,8 +2,7 @@ package it.unibo.scall
 
 enum Element:
   case Eps
-  case TextTerminal(text: String)
-  case RegexTerminal(pattern: String)
+  case Terminal(pattern: String)
   case Nonterminal(rule: () => Element)
   case Concat(first: Element, second: Element)
   case Alternation(first: Element, second: Element)
@@ -12,7 +11,6 @@ enum Element:
   case OneOrMore(inner: Element)
 
 object Element:
-  type Terminal = TextTerminal | RegexTerminal
   type Symbol = Terminal | Nonterminal
   
   extension (element: Element)

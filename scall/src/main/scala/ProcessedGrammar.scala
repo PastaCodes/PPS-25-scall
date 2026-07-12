@@ -12,7 +12,7 @@ type PartialFollowings = MultiMap[AnyNonterminal, SymbolSeq]
 case class Following(productionHead: AnyNonterminal, followingSeq: SymbolSeq)
 type Followings = MultiMap[AnyNonterminal, Following]
 
-case class ProcessedGrammar(terminals: Set[Terminal],
+case class ProcessedGrammar(terminals: Seq[Terminal],
                             productions: Productions,
                             followings: Followings)
 
