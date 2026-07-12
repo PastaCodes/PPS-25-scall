@@ -2,20 +2,29 @@ package it.unibo.scall
 
 import Element.*
 
+import scala.annotation.tailrec
+
 class Lexer(terminals: Seq[Terminal]):
 
   def tokenize(input: String)(using skipped: Set[Terminal] = Set.empty): LazyList[Token] =
-    val allTokens = LazyList.unfold(0): pos =>
-      Option.unless(pos >= input.length):
-        findLongestMatch(input, pos)
-          .map: validToken =>
-            (validToken, pos + validToken.lexeme.length)
-          .getOrElse:
-            val errorChar = input.charAt(pos).toString
-            (Token.Error(errorChar), pos + 1)
 
-    allTokens.filterNot: token =>
-      token.terminalOpt.exists(skipped.contains)
+    @tailrec
+    def nextValid(pos: Int): Option[(Token, Int)] =
+      if pos >= input.length then None
+      else
+        findLongestMatch(input, pos) match
+
+          case Some(v @ Token.Valid(term, _)) if skipped.contains(term) =>
+            nextValid(pos + v.lexeme.length)
+
+          case Some(validToken) =>
+            Some(validToken -> (pos + validToken.lexeme.length))
+
+          case None =>
+            val errorChar = input.charAt(pos).toString
+            Some(Token.Error(errorChar) -> (pos + 1))
+
+    LazyList.unfold(0)(nextValid)
 
   import Lexer.matchPrefixAt
 
@@ -24,7 +33,7 @@ class Lexer(terminals: Seq[Terminal]):
       .flatMap: (t, index) =>
         t.matchPrefixAt(input, pos).map(lexeme => (Token.Valid(t, lexeme), index))
       .maxByOption((token, index) => (token.lexeme.length, -index))
-      .map((token, _) => token)
+      .map(_._1)
 
 object Lexer:
 
