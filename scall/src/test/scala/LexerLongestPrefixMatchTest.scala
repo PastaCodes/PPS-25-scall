@@ -4,7 +4,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 import Element.*
 
-class LexerTest extends AnyFunSuite:
+class LexerLongestPrefixMatchTest extends AnyFunSuite:
   val emptyLexer = Lexer(Seq.empty)
   val ifRule: Terminal = TextTerminal("if")
   val ifLexer = Lexer(Seq(ifRule))

@@ -5,14 +5,14 @@ import Element.*
 class Lexer(terminals: Seq[Terminal]):
 
   def tokenize(input: String): LazyList[Token] =
-    LazyList.unfold(0):
-      case pos if pos >= input.length => None
-      case pos => findLongestMatch(input, pos) match
-        case Some(validToken) =>
-          Some((validToken, pos + validToken.lexeme.length))
-        case None =>
-          val errorChar = input.charAt(pos).toString
-          Some((Token.Error(errorChar), pos + 1))
+    LazyList.unfold(0): pos =>
+      Option.unless(pos >= input.length):
+        findLongestMatch(input, pos)
+          .map: validToken =>
+            (validToken, pos + validToken.lexeme.length)
+          .getOrElse:
+            val errorChar = input.charAt(pos).toString
+            (Token.Error(errorChar), pos + 1)
 
   import Lexer.matchPrefixAt
 
