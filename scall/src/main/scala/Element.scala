@@ -4,7 +4,7 @@ import scala.util.matching.Regex
 
 enum Element:
   case Eps
-  case Terminal(pattern: String)
+  case Terminal(regex: Regex)
   case Nonterminal(rule: () => Element)
   case Concat(first: Element, second: Element)
   case Alternation(first: Element, second: Element)
@@ -14,9 +14,6 @@ enum Element:
 
 object Element:
   type Symbol = Terminal | Nonterminal
-
-  extension (terminal: Terminal)
-    def regex: Regex = terminal.pattern.r
   
   extension (element: Element)
     def ++(other: Element): Concat = Concat(element, other)

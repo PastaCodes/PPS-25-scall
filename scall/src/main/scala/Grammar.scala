@@ -12,10 +12,10 @@ open class Grammar:
     Nonterminal(() => body)
 
   protected def ->(regex: Regex): Terminal =
-    register(Terminal(regex.regex))
+    register(Terminal(regex))
 
   protected def ->(text: String): Terminal =
-    register(Terminal(Regex.quote(text)))
+    register(Terminal(Regex.quote(text).r))
 
   private def register(terminal: Terminal): Terminal =
     _terminals :+= terminal

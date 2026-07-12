@@ -7,9 +7,9 @@ import Element.*
 
 class GrammarTest extends AnyFunSuite:
 
-  val a = Terminal("a")
-  val b = Terminal("b")
-  val c = Terminal("c")
+  val a = Terminal("a".r)
+  val b = Terminal("b".r)
+  val c = Terminal("c".r)
 
   test("++ concatenates two elements"):
     (a ++ b) shouldBe Concat(a,b)
@@ -43,10 +43,10 @@ class GrammarTest extends AnyFunSuite:
     val number: Terminal = -> ("[0-9]+".r)
 
   test("-> create a terminal from a string"):
-    ArithmeticGrammar.plus shouldBe Terminal(Regex.quote("+"))
+    ArithmeticGrammar.plus.regex.regex shouldBe Regex.quote("+")
 
   test("-> create a terminal from a regular expression"):
-    ArithmeticGrammar.number shouldBe Terminal("[0-9]+")
+    ArithmeticGrammar.number.regex.regex shouldBe "[0-9]+"
 
   test("-> create a rule with a lazily evaluated body"):
     ArithmeticGrammar.digit.rule() shouldBe Alternation(ArithmeticGrammar.zero, ArithmeticGrammar.one)
@@ -64,7 +64,7 @@ class GrammarTest extends AnyFunSuite:
     object DuplicateGrammar extends Grammar:
       val p1: Terminal = -> ("[ab]".r)
       val p2: Terminal = -> ("[ab]".r)
-    DuplicateGrammar.p1 shouldBe DuplicateGrammar.p2
+    DuplicateGrammar.p1 should not be DuplicateGrammar.p2
     DuplicateGrammar.terminals shouldBe Seq(DuplicateGrammar.p1, DuplicateGrammar.p2)
 
   test("a grammar keeps track of the terminals it defines"):
@@ -87,6 +87,6 @@ class GrammarTest extends AnyFunSuite:
     ArithmeticGrammar.number.regex.matches("42") shouldBe true
     ArithmeticGrammar.number.regex.matches("4a") shouldBe false
 
-  test("a regex created from text matches it literally "):
+  test("a regex created from text matches it literally"):
     ArithmeticGrammar.plus.regex.matches("+") shouldBe true
     ArithmeticGrammar.plus.regex.matches("++") shouldBe false
