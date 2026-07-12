@@ -26,10 +26,7 @@ class Lexer(terminals: Seq[Terminal]):
 object Lexer:
 
   extension (t: Terminal)
-    def matchPrefixAt(s: String, pos: Int): Option[String] = t match
-      case TextTerminal(text) =>
-        Option.when(s.startsWith(text, pos))(text)
-      case RegexTerminal(regex) =>
-        val matcher = regex.pattern.matcher(s)
-        matcher.region(pos, s.length)
-        Option.when(matcher.lookingAt())(matcher.group())
+    def matchPrefixAt(s: String, pos: Int): Option[String] =
+      val matcher = t.regex.pattern.matcher(s)
+      matcher.region(pos, s.length)
+      Option.when(matcher.lookingAt())(matcher.group())
