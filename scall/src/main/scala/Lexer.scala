@@ -2,8 +2,6 @@ package it.unibo.scall
 
 import Element.*
 
-import Lexer.matchPrefix
-
 import scala.annotation.tailrec
 
 class Lexer(terminals: Seq[Terminal]):
@@ -18,6 +16,7 @@ class Lexer(terminals: Seq[Terminal]):
             case None => acc.reverse
     _tokenize(input, Nil)
 
+  import Lexer.matchPrefix
   private def findBestMatch(s: String): Option[Token] =
     terminals
       .flatMap: t =>
