@@ -1,5 +1,7 @@
 package it.unibo.scall
 
+import scala.util.matching.Regex
+
 enum Element:
   case Eps
   case Terminal(pattern: String)
@@ -12,6 +14,9 @@ enum Element:
 
 object Element:
   type Symbol = Terminal | Nonterminal
+
+  extension (terminal: Terminal)
+    def regex: Regex = terminal.pattern.r
   
   extension (element: Element)
     def ++(other: Element): Concat = Concat(element, other)

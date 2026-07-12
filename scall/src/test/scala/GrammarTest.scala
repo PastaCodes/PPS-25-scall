@@ -49,7 +49,7 @@ class GrammarTest extends AnyFunSuite:
     ArithmeticGrammar.number shouldBe Terminal("[0-9]+")
 
   test("-> create a rule with a lazily evaluated body"):
-    ArithmeticGrammar.digit.rule() shouldBe Alternation(Terminal("0"), Terminal("1"))
+    ArithmeticGrammar.digit.rule() shouldBe Alternation(ArithmeticGrammar.zero, ArithmeticGrammar.one)
 
   test("a rule can reference rules defined after it"):
     ArithmeticGrammar.term.rule() shouldBe OneOrMore(ArithmeticGrammar.digit)
@@ -82,3 +82,11 @@ class GrammarTest extends AnyFunSuite:
     object EmptyGrammar extends Grammar:
       val nothing: Nonterminal = -> (Eps)
     EmptyGrammar.nothing.rule() shouldBe Eps
+
+  test("a regex exposes its pattern as a compiled regex"):
+    ArithmeticGrammar.number.regex.matches("42") shouldBe true
+    ArithmeticGrammar.number.regex.matches("4a") shouldBe false
+
+  test("a regex created from text matches it literally "):
+    ArithmeticGrammar.plus.regex.matches("+") shouldBe true
+    ArithmeticGrammar.plus.regex.matches("++") shouldBe false
