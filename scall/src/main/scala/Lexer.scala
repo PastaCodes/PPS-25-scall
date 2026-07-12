@@ -2,35 +2,34 @@ package it.unibo.scall
 
 import Element.*
 
-import scala.annotation.tailrec
-
 class Lexer(terminals: Seq[Terminal]):
 
-  def tokenize(input: String): List[Token] =
-    @tailrec
-    def _tokenize(remaining: String, acc: List[Token]): List[Token] =
-      remaining match
-        case "" => acc.reverse
-        case s =>
-          findBestMatch(s) match
-            case Some(validToken) =>
-              _tokenize(s.drop(validToken.lexeme.length), validToken :: acc)
-            case None =>
-              val errorChar = s.take(1)
-              _tokenize(s.drop(1), Token.Error(errorChar) :: acc)
-    _tokenize(input, Nil)
+  def tokenize(input: String): LazyList[Token] =
+    LazyList.unfold(0):
+      case pos if pos >= input.length => None
+      case pos => findLongestMatch(input, pos) match
+        case Some(validToken) =>
+          Some((validToken, pos + validToken.lexeme.length))
+        case None =>
+          val errorChar = input.charAt(pos).toString
+          Some((Token.Error(errorChar), pos + 1))
 
-  import Lexer.matchPrefix
-  private def findBestMatch(s: String): Option[Token] =
+  import Lexer.matchPrefixAt
+
+  private def findLongestMatch(input: String, pos: Int): Option[Token] =
     terminals.zipWithIndex
       .flatMap: (t, index) =>
-        t.matchPrefix(s).map(lexeme => (Token.Valid(t, lexeme), index))
+        t.matchPrefixAt(input, pos).map(lexeme => (Token.Valid(t, lexeme), index))
       .maxByOption((token, index) => (token.lexeme.length, -index))
       .map((token, _) => token)
 
 object Lexer:
 
   extension (t: Terminal)
-    def matchPrefix(s: String): Option[String] = t match
-      case TextTerminal(text) => Option.when(s.startsWith(text))(text)
-      case RegexTerminal(regex) => regex.findPrefixOf(s)
+    def matchPrefixAt(s: String, pos: Int): Option[String] = t match
+      case TextTerminal(text) =>
+        Option.when(s.startsWith(text, pos))(text)
+      case RegexTerminal(regex) =>
+        val matcher = regex.pattern.matcher(s)
+        matcher.region(pos, s.length)
+        Option.when(matcher.lookingAt())(matcher.group())
