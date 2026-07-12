@@ -5,6 +5,7 @@ import org.scalatest.matchers.should.Matchers.*
 import Element.*
 
 class LexerLongestPrefixMatchTest extends AnyFunSuite:
+  
   object EmptyGrammar extends Grammar
   // noinspection ForwardReference, TypeAnnotation
   object BasicGrammar extends Grammar:

@@ -4,8 +4,8 @@ import Element.*
 
 class Lexer(terminals: Seq[Terminal]):
 
-  def tokenize(input: String): LazyList[Token] =
-    LazyList.unfold(0): pos =>
+  def tokenize(input: String)(using skipped: Set[Terminal] = Set.empty): LazyList[Token] =
+    val allTokens = LazyList.unfold(0): pos =>
       Option.unless(pos >= input.length):
         findLongestMatch(input, pos)
           .map: validToken =>
@@ -13,6 +13,9 @@ class Lexer(terminals: Seq[Terminal]):
           .getOrElse:
             val errorChar = input.charAt(pos).toString
             (Token.Error(errorChar), pos + 1)
+
+    allTokens.filterNot: token =>
+      token.terminalOpt.exists(skipped.contains)
 
   import Lexer.matchPrefixAt
 
