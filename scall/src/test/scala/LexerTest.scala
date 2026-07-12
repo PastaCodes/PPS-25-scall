@@ -10,4 +10,11 @@ class LexerTest extends AnyFunSuite:
   test("Lexer should return empty seq for empty string"):
     val lexer = Lexer(Seq.empty)
     lexer.tokenize("") shouldBe empty
-    
+
+  test("Lexer recognize TextTerminal"):
+    val ifRule: Terminal = TextTerminal("if")
+    val input = "if"
+
+    val lexer = Lexer(Seq(ifRule))
+    val tokens = lexer.tokenize(input)
+    tokens.map(_.lexeme) shouldBe List("if")
