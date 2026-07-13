@@ -6,14 +6,14 @@ import scala.annotation.tailrec
 class Lexer(terminals: Seq[Terminal]):
   private val indexedTerminals = terminals.zipWithIndex
 
-  def tokenize(input: String)(using skipped: Set[Terminal] = Set.empty): LazyList[Token] =
+  def tokenize(input: String): LazyList[Token] =
 
     @tailrec
     def nextValid(pos: Int): Option[(Token, Int)] =
       if pos >= input.length then None
       else
         findLongestMatch(input, pos) match
-          case Some(Token.Valid(term, lexeme)) if skipped.contains(term) =>
+          case Some(Token.Valid(term, lexeme)) if term.isSkipped =>
             nextValid(pos + lexeme.length)
 
           case Some(validToken) =>

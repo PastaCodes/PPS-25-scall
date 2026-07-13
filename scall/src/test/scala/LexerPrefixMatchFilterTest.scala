@@ -5,32 +5,38 @@ import org.scalatest.matchers.should.Matchers.*
 import Element.*
 
 class LexerPrefixMatchFilterTest extends AnyFunSuite:
-
+  
   // noinspection ForwardReference, TypeAnnotation
-  object BasicGrammar extends Grammar:
+  object NoSkippingGrammar extends Grammar:
     val whitespaceRule = -> ("\\s+".r)
     val idRule = -> ("[a-z]+".r)
+    
+  // noinspection ForwardReference, TypeAnnotation
+  object SkippingGrammar extends Grammar:
+    val whitespaceRule = -> ("\\s+".r, skip = true)
+    val idRule = -> ("[a-z]+".r)
 
-  import BasicGrammar.*
+  val noSkippingLexer = Lexer(NoSkippingGrammar.terminals)
+  val SkippingLexer = Lexer(SkippingGrammar.terminals)
+  
+  test("Lexer should tokenise whitespace if not marked as skipped"):
+    val tokens = noSkippingLexer.tokenize(" a b ").toList
 
-  val lexer = Lexer(BasicGrammar.terminals)
-
-  test("Lexer should individuate whitespace terminals"):
-    val tokens = lexer.tokenize(" a b  c ").toList
-
-    tokens.map(_.lexeme) shouldBe List(" ", "a", " ", "b", "  ", "c", " ")
+    tokens.map(_.lexeme) shouldBe List(" ", "a", " ", "b", " ")
     tokens.collect { case Token.Valid(t, _) => t } shouldBe List(
-      whitespaceRule,
-      idRule,
-      whitespaceRule,
-      idRule,
-      whitespaceRule,
-      idRule,
-      whitespaceRule)
+      NoSkippingGrammar.whitespaceRule,
+      NoSkippingGrammar.idRule,
+      NoSkippingGrammar.whitespaceRule,
+      NoSkippingGrammar.idRule,
+      NoSkippingGrammar.whitespaceRule
+    )
 
-  test("Lexer should skip whitespace terminals"):
-    given skippedRules: Set[Terminal] = Set(whitespaceRule)
-    val tokens = lexer.tokenize(" a b  c ").toList
+  test("Lexer should automatically drop skipped terminals defined in grammar"):
+    val tokens = SkippingLexer.tokenize(" a b  c ").toList
 
     tokens.map(_.lexeme) shouldBe List("a", "b", "c")
-    tokens.collect { case Token.Valid(t, _) => t } shouldBe List(idRule, idRule, idRule)
+    tokens.collect { case Token.Valid(t, _) => t } shouldBe List(
+      SkippingGrammar.idRule,
+      SkippingGrammar.idRule,
+      SkippingGrammar.idRule
+    )
