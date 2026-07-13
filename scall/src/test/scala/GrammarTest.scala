@@ -52,6 +52,10 @@ class GrammarTest extends AnyFunSuite:
     ArithmeticGrammar.plus.name shouldBe "plus"
     ArithmeticGrammar.number.name shouldBe "number"
 
+  test("-> captures the name of the Nonterminal val being defined"):
+    ArithmeticGrammar.expression.name shouldBe "expression"
+    ArithmeticGrammar.digit.name shouldBe "digit"
+
   test("-> create a terminal from a string"):
     ArithmeticGrammar.plus.regex.regex shouldBe Regex.quote("+")
 
