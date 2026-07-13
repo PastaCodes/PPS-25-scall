@@ -105,3 +105,11 @@ class GrammarTest extends AnyFunSuite:
   test("a regex created from text matches it literally"):
     ArithmeticGrammar.plus.regex.matches("+") shouldBe true
     ArithmeticGrammar.plus.regex.matches("++") shouldBe false
+
+  test("show render elements as EBNF"):
+    ArithmeticGrammar.expression.rule().show shouldBe "term (plus expression)?"
+    (a ++ b | c).show shouldBe "a b | c"
+    ((a | b) ++ c).show shouldBe "(a | b) c"
+    (a ++ b ++ c).show shouldBe "a b c"
+    (a ++ b).?.show shouldBe "(a b)?"
+    Eps.show shouldBe "\u03b5"
