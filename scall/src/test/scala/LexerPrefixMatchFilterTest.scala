@@ -19,7 +19,7 @@ class LexerPrefixMatchFilterTest extends AnyFunSuite:
     val tokens = lexer.tokenize(" a b  c ").toList
 
     tokens.map(_.lexeme) shouldBe List(" ", "a", " ", "b", "  ", "c", " ")
-    tokens.map(_.terminalOpt.get) shouldBe List(
+    tokens.collect { case Token.Valid(t, _) => t } shouldBe List(
       whitespaceRule,
       idRule,
       whitespaceRule,
@@ -33,4 +33,4 @@ class LexerPrefixMatchFilterTest extends AnyFunSuite:
     val tokens = lexer.tokenize(" a b  c ").toList
 
     tokens.map(_.lexeme) shouldBe List("a", "b", "c")
-    tokens.map(_.terminalOpt.get) shouldBe List(idRule, idRule, idRule)
+    tokens.collect { case Token.Valid(t, _) => t } shouldBe List(idRule, idRule, idRule)

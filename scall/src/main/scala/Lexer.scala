@@ -1,10 +1,10 @@
 package it.unibo.scall
 
 import Element.*
-
 import scala.annotation.tailrec
 
 class Lexer(terminals: Seq[Terminal]):
+  private val indexedTerminals = terminals.zipWithIndex
 
   def tokenize(input: String)(using skipped: Set[Terminal] = Set.empty): LazyList[Token] =
 
@@ -13,25 +13,23 @@ class Lexer(terminals: Seq[Terminal]):
       if pos >= input.length then None
       else
         findLongestMatch(input, pos) match
-
-          case Some(v @ Token.Valid(term, _)) if skipped.contains(term) =>
-            nextValid(pos + v.lexeme.length)
+          case Some(Token.Valid(term, lexeme)) if skipped.contains(term) =>
+            nextValid(pos + lexeme.length)
 
           case Some(validToken) =>
             Some(validToken -> (pos + validToken.lexeme.length))
 
           case None =>
-            val errorChar = input.charAt(pos).toString
-            Some(Token.Error(errorChar) -> (pos + 1))
+            Some(Token.Error(input.charAt(pos).toString) -> (pos + 1))
 
     LazyList.unfold(0)(nextValid)
 
   import Lexer.matchPrefixAt
 
   private def findLongestMatch(input: String, pos: Int): Option[Token] =
-    terminals.zipWithIndex
+    indexedTerminals
       .flatMap: (t, index) =>
-        t.matchPrefixAt(input, pos).map(lexeme => (Token.Valid(t, lexeme), index))
+        t.matchPrefixAt(input, pos).map(Token.Valid(t, _) -> index)
       .maxByOption((token, index) => (token.lexeme.length, -index))
       .map(_._1)
 
