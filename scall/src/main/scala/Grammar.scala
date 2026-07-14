@@ -10,17 +10,11 @@ open class Grammar:
   protected def ->(body: => Element): Nonterminal =
     Nonterminal(() => body)
 
-  protected def ->(regex: Regex): Terminal =
-    register(Terminal(regex))
-
-  protected def ->(regex: Regex, skip: Boolean): Terminal =
+  protected def ->(pattern: String | Regex, skip: Boolean = false): Terminal =
+    val regex = pattern match
+      case s: String => Regex.quote(s).r
+      case r: Regex  => r
     register(Terminal(regex, skip))
-
-  protected def ->(text: String): Terminal =
-    register(Terminal(Regex.quote(text).r))
-
-  protected def ->(text: String, skip: Boolean): Terminal =
-    register(Terminal(Regex.quote(text).r, skip))
 
   private def register(terminal: Terminal): Terminal =
     _terminals :+= terminal
