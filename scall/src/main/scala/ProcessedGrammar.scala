@@ -2,7 +2,7 @@ package it.unibo.scall
 
 import Element.*
 
-class InternalNonterminal
+case class InternalNonterminal(name: String)
 type AnyNonterminal = Nonterminal | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal
 type SymbolSeq = Seq[AnySymbol]
@@ -73,7 +73,7 @@ object ProcessedGrammar:
         )
       
       case ZeroOrMore(t) =>
-        val repetition = InternalNonterminal()
+        val repetition = repetitionNonterminal(t)
         visitUnary(t)(
           alternativesFn      = _ => Alternatives.ofZeroOrMore(repetition),
           addProductionsFn    = v => Productions.ofOrMore(v.alternatives, repetition),
@@ -82,7 +82,7 @@ object ProcessedGrammar:
         )
       
       case OneOrMore(t) =>
-        val repetition = InternalNonterminal()
+        val repetition = repetitionNonterminal(t)
         visitUnary(t)(
           alternativesFn      = v => Alternatives.ofOneOrMore(v.alternatives, repetition),
           addProductionsFn    = v => Productions.ofOrMore(v.alternatives, repetition),
@@ -120,6 +120,9 @@ object ProcessedGrammar:
       partialFollowingsFn(v1, v2),
       v1.followings unionAll v2.followings
     )
+  
+  private def repetitionNonterminal(t: Element): InternalNonterminal =
+    InternalNonterminal(name = ZeroOrMore(t).show)
 
 object Alternatives:
   def ofEps: Alternatives                                                   = Set(Seq.empty)

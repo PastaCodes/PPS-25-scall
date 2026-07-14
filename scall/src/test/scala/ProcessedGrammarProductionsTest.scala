@@ -78,3 +78,15 @@ class ProcessedGrammarProductionsTest extends AnyFunSuite:
         Seq(b, repetitionSymbol),
         Seq.empty
       ) =>
+
+  test("zeroOrMore creates an internal nonterminal with a name that describes its contents"):
+    ProcessedGrammar.visit((a | b).*).productions.toSeq should matchPattern:
+      case Seq(
+        InternalNonterminal(name = "(a | b)*") -> _
+      ) =>
+
+  test("oneOrMore creates an internal nonterminal with a name that describes its contents"):
+    ProcessedGrammar.visit((a | b).+).productions.toSeq should matchPattern:
+      case Seq(
+        InternalNonterminal(name = "(a | b)*") -> _
+      ) =>
