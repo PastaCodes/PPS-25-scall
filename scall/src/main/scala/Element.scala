@@ -24,7 +24,7 @@ object Element:
 
     def show: String = element match
       case Element.Eps => "\u03b5"
-      case Element.Terminal(name, _) => name
+      case Element.Terminal(name, _, _) => name
       case Element.Nonterminal(name, _) => name
       case Element.Concat(first, second) => s"${first.showInConcat} ${second.showInConcat}"
       case Element.Alternation(first, second) => s"${first.show} | ${second.show}"
