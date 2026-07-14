@@ -7,14 +7,14 @@ open class Grammar:
 
   private var _terminals = Vector.empty[Terminal]
 
-  protected def ->(body: => Element): Nonterminal =
-    Nonterminal(() => body)
+  protected def ->(body: => Element)(using name: sourcecode.Name): Nonterminal =
+    Nonterminal(name.value, () => body)
 
-  protected def ->(pattern: String | Regex, skip: Boolean = false): Terminal =
+  protected def ->(pattern: String | Regex, skip: Boolean = false)(using name: sourcecode.Name): Terminal =
     val regex = pattern match
       case s: String => Regex.quote(s).r
       case r: Regex  => r
-    register(Terminal(regex, skip))
+    register(Terminal(name.value, regex, skip))
 
   private def register(terminal: Terminal): Terminal =
     _terminals :+= terminal
