@@ -21,6 +21,7 @@ object Element:
     def ? : Optional = Optional(element)
     def * : ZeroOrMore = ZeroOrMore(element)
     def + : OneOrMore = OneOrMore(element)
+
     def show: String = element match
       case Element.Eps => "\u03b5"
       case Element.Terminal(name, _) => name
