@@ -2,7 +2,6 @@ package it.unibo.scall
 
 import Element.*
 
-
 import scala.util.matching.Regex
 
 open class Grammar:
