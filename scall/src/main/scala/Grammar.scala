@@ -1,7 +1,6 @@
 package it.unibo.scall
 
 import Element.*
-
 import scala.util.matching.Regex
 
 open class Grammar:
@@ -11,11 +10,11 @@ open class Grammar:
   protected def ->(body: => Element)(using name: sourcecode.Name): Nonterminal =
     Nonterminal(name.value, () => body)
 
-  protected def ->(regex: Regex)(using name: sourcecode.Name): Terminal =
-    register(Terminal(name.value, regex))
-
-  protected def ->(text: String)(using name: sourcecode.Name): Terminal =
-    register(Terminal(name.value, Regex.quote(text).r))
+  protected def ->(pattern: String | Regex, skip: Boolean = false)(using name: sourcecode.Name): Terminal =
+    val regex = pattern match
+      case s: String => Regex.quote(s).r
+      case r: Regex  => r
+    register(Terminal(name.value, regex, skip))
 
   private def register(terminal: Terminal): Terminal =
     _terminals :+= terminal

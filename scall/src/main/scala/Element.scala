@@ -4,7 +4,7 @@ import scala.util.matching.Regex
 
 enum Element:
   case Eps
-  case Terminal(name: String, regex: Regex)
+  case Terminal(name: String, regex: Regex, isSkipped: Boolean = false)
   case Nonterminal(name: String, rule: () => Element)
   case Concat(first: Element, second: Element)
   case Alternation(first: Element, second: Element)
