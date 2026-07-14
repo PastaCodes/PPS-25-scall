@@ -8,14 +8,14 @@ open class Grammar:
 
   private var _terminals = Vector.empty[Terminal]
 
-  protected def ->(body: => Element): Nonterminal =
-    Nonterminal(() => body)
+  protected def ->(body: => Element)(using name: sourcecode.Name): Nonterminal =
+    Nonterminal(name.value, () => body)
 
-  protected def ->(regex: Regex): Terminal =
-    register(Terminal(regex))
+  protected def ->(regex: Regex)(using name: sourcecode.Name): Terminal =
+    register(Terminal(name.value, regex))
 
-  protected def ->(text: String): Terminal =
-    register(Terminal(Regex.quote(text).r))
+  protected def ->(text: String)(using name: sourcecode.Name): Terminal =
+    register(Terminal(name.value, Regex.quote(text).r))
 
   private def register(terminal: Terminal): Terminal =
     _terminals :+= terminal
