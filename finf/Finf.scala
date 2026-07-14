@@ -1,9 +1,11 @@
 package it.unibo.finf
 
+import it.unibo.scall.Element.Nonterminal
 import it.unibo.scall.Grammar
 
-object Finf extends Grammar
-  /*
+// noinspection ForwardReference, ScalaWeakerAccess, TypeAnnotation
+object Finf extends Grammar:
+
   val program = -> (
     (LET ++ topDeclaration.* ++ IN).? ++ expression ++ SEMI
   )
@@ -14,7 +16,7 @@ object Finf extends Grammar
   | valueDeclaration
   )
 
-  val commonDeclaration = -> (
+  val commonDeclaration: Nonterminal = -> (
     functionDeclaration
   | valueDeclaration
   )
@@ -26,8 +28,12 @@ object Finf extends Grammar
   val functionDeclaration = -> (
     functionSignature ++ functionBody
   )
-  private val functionSignature = FUN ++ ID ++ COLON ++ typeRef ++ LPAREN ++ parameterList ++ RPAREN
-  private val functionBody = (LET ++ commonDeclaration.* ++ IN).? ++ expression ++ SEMI
+  val functionSignature = -> (
+    FUN ++ ID ++ COLON ++ typeRef ++ LPAREN ++ parameterList ++ RPAREN
+  )
+  val functionBody = -> (
+    (LET ++ commonDeclaration.* ++ IN).? ++ expression ++ SEMI
+  )
 
   val valueDeclaration = -> (
     VAL ++ ID ++ COLON ++ typeRef ++ ASSIGN ++ expression ++ SEMI
@@ -37,7 +43,7 @@ object Finf extends Grammar
     ( ID ++ COLON ++ typeRef ++ (COMMA ++ ID ++ COLON ++ typeRef).* ).?
   )
 
-  val expression = -> (
+  val expression: Nonterminal = -> (
     weakExpression ++ (TIMES | DIV) ++ weakExpression
   | weakExpression ++ (PLUS | MINUS) ++ weakExpression
   | weakExpression ++ (LT | GT | LEQ | GEQ) ++ weakExpression
@@ -47,7 +53,7 @@ object Finf extends Grammar
   | weakExpression
   )
 
-  val weakExpression = -> (
+  val weakExpression: Nonterminal = -> (
     LPAREN ++ expression ++ RPAREN
   | IF ++ expression ++ THEN ++ LBRACE ++ expression ++ RBRACE ++ ELSE ++ LBRACE ++ expression ++ RBRACE
   | PRINT ++ LPAREN ++ argumentList ++ RPAREN
@@ -110,16 +116,13 @@ object Finf extends Grammar
   val FALSE   = -> ("false")
   val NULL    = -> ("null")
 
-  val DIGITS  = -> (???)
+  val DIGITS  = -> ("0|[1-9][0-9]*".r)
 
-  val ID      = -> (???)
+  val ID      = -> ("[a-zA-Z][a-zA-Z0-9]*".r)
 
-  val WHITESP = -> (???)
+  val WHITESP = -> ("[\t \r\n]+".r, skip = true)
 
-  val COMMENT = -> (???)
-
-  val ERR     = -> (???)
-   */
+  val COMMENT = -> ("""/\*.*?\*/""".r, skip = true)
 
 @main
 def demo(args: String*): Unit =
