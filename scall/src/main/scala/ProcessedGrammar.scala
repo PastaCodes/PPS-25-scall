@@ -6,6 +6,11 @@ import util.*
 case class InternalNonterminal(name: String)
 type AnyNonterminal = Nonterminal | InternalNonterminal
 type AnySymbol = Terminal | AnyNonterminal
+extension (s: AnySymbol)
+  def name: String = s match
+    case Terminal(name, _, _) => name
+    case Nonterminal(name, _) => name
+    case InternalNonterminal(name) => name
 type SymbolSeq = Seq[AnySymbol]
 type Alternatives = Set[SymbolSeq]
 type Productions = MultiMap[AnyNonterminal, SymbolSeq]
