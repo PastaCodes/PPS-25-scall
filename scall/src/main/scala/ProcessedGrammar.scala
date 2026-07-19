@@ -1,6 +1,7 @@
 package it.unibo.scall
 
 import Element.*
+import util.*
 
 case class InternalNonterminal(name: String)
 type AnyNonterminal = Nonterminal | InternalNonterminal
