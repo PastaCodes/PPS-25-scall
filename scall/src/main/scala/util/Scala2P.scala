@@ -25,6 +25,10 @@ extension (engine: Prolog)
         override def hasNext: Boolean = engine.hasOpenAlternatives
         override def next(): SolveInfo = engine.solveNext
 
+extension (solutions: Iterable[SolveInfo])
+  def collectSuccess[R](mapper: SolveInfo => R): Iterable[R] =
+    solutions.collect { case s if s.isSuccess => mapper(s) }
+
 given Conversion[String, Term] = Struct.atom(_)
 given [A](using itemConv: Conversion[A, Term]): Conversion[Iterable[A], Term] =
   i => Struct.list(i.map(itemConv).asJava)
@@ -34,6 +38,8 @@ def variable(name: String): Var = Var.of(name)
 extension (solution: SolveInfo)
   def mapBinding[B](variable: Var)(mapper: PartialFunction[Term, B]): B =
     mapper(solution.getVarValue(variable.getName))
+  def mapBindingAtom[B](variable: Var)(mapper: String => B): B =
+    mapper(solution.getVarValue(variable.getName).asInstanceOf[Struct].getName)
 
 object Atom:
   def unapply(t: Term): Option[String] =

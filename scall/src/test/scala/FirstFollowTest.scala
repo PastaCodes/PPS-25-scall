@@ -31,3 +31,10 @@ class FirstFollowTest extends AnyFunSuite:
       y -> Set(c, Eps),
       z -> Set(Eps)
     )
+
+  test("should compute FOLLOW sets"):
+    val g = ProcessedGrammar.of(TestGrammar, TestGrammar.x)
+    FirstFollow.compute(g).followSets shouldBe Map(
+      y -> Set(a),
+      z -> Set(a)
+    )
