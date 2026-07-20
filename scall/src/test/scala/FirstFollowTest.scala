@@ -1,7 +1,7 @@
 package it.unibo.scall
 
 import Element.Eps
-import util.engineWithTheoryFile
+import FirstFollow.Eof
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
@@ -10,7 +10,7 @@ class FirstFollowTest extends AnyFunSuite:
 
   test("should load theory from file"):
     noException should be thrownBy
-      engineWithTheoryFile(getClass.getResourceAsStream("/prolog/first_follow.pl"))
+      util.Scala2P.engineWithTheoryFile(getClass.getResourceAsStream("/prolog/first_follow.pl"))
 
   // noinspection ForwardReference, TypeAnnotation
   object TestGrammar extends Grammar:

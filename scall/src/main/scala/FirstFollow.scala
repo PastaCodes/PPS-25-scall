@@ -1,24 +1,28 @@
 package it.unibo.scall
 
 import Element.{Eps, Terminal}
-import util.{*, given}
-
-type TerminalOrEps = Terminal | Eps.type
-type FirstSet = Set[TerminalOrEps]
-type FirstSets = Map[AnyNonterminal, FirstSet]
-case object Eof
-type TerminalOrEof = Terminal | Eof.type
-type FollowSet = Set[TerminalOrEof]
-type FollowSets = Map[AnyNonterminal, FollowSet]
-case class FirstFollow(firstSets: FirstSets, followSets: FollowSets)
+import ProcessedGrammar.{AnyNonterminal, AnySymbol}
+import util.CollectionUtils.{mapEntries, toMultiMap}
+import util.Scala2P
+import util.Scala2P.{*, given}
 
 object FirstFollow:
+
+  type TerminalOrEps = Terminal | Eps.type
+  type FirstSet = Set[TerminalOrEps]
+  type FirstSets = Map[AnyNonterminal, FirstSet]
+  case object Eof
+  type TerminalOrEof = Terminal | Eof.type
+  type FollowSet = Set[TerminalOrEof]
+  type FollowSets = Map[AnyNonterminal, FollowSet]
+  case class FirstFollow(firstSets: FirstSets, followSets: FollowSets)
 
   private val theoryFile = "/prolog/first_follow.pl"
 
   private lazy val engine = engineWithTheoryFile(
     getClass.getResourceAsStream(theoryFile)
   )
+  given Scala2P = engine
 
   def compute(grammar: ProcessedGrammar): FirstFollow =
     given ProcessedGrammar = grammar
@@ -26,34 +30,33 @@ object FirstFollow:
       val nt = variable("X")
       val t = variable("A")
       val firstGoal = compoundTerm("first", nt, t)
-      val firstSets: FirstSets = engine.solveAll(firstGoal).collectSuccess { s => (
-        s.mapBindingAtom(nt)(findNonterminal),
-        s.mapBinding(t):
-          case Atom(name) => findTerminal(name)
+      val firstSets: FirstSets = engine.solveAll(firstGoal).collectSuccess[(AnyNonterminal, TerminalOrEps)] { s => (
+        s.getRegistered[AnyNonterminal](nt),
+        s.get(t):
+          case RegisteredTerminal(t) => t
           case Int(0) => Eps
-      ): (AnyNonterminal, TerminalOrEps)}.toMultiMap
+      )}.toMultiMap
       val followGoal = compoundTerm("follow", nt, t)
-      val followSets = engine.solveAll(followGoal).collectSuccess { s => (
-        s.mapBindingAtom(nt)(findNonterminal),
-        s.mapBinding(t):
-          case Atom(name) => findTerminal(name)
+      val followSets: FollowSets = engine.solveAll(followGoal).collectSuccess { s => (
+        s.getRegistered[AnyNonterminal](nt),
+        s.get(t):
+          case RegisteredTerminal(t) => t
           case Int(1) => Eof
       )}.toMultiMap
       FirstFollow(firstSets, followSets)
 
   private def grammarKnowledge(using g: ProcessedGrammar) =
     import scala.language.implicitConversions
+    given TermConversion[AnySymbol] = register
     val t = g.terminals.filter(!_.isSkipped).map: t =>
-      compoundTerm("terminal", t.name)
+      compoundTerm("terminal", t)
     val p = g.productions.mapEntries: (head, body) =>
-      compoundTerm("production", head.name, body.map(_.name))
+      compoundTerm("production", head, body)
     val f = g.followings.mapEntries: (nt, f) =>
-      compoundTerm("following", nt.name, f.followingSeq.map(_.name), f.productionHead.name)
-    val s = compoundTerm("start_symbol", g.startSymbol.name)
+      compoundTerm("following", nt, f.followingSeq, f.productionHead)
+    val s = compoundTerm("start_symbol", g.startSymbol)
     t ++ p ++ f :+ s
 
-  private def findTerminal(name: String)(using g: ProcessedGrammar) =
-    g.terminals.find(_.name == name).get
-
-  private def findNonterminal(name: String)(using g: ProcessedGrammar) =
-    g.productions.keySet.find(_.name == name).get
+  private object RegisteredTerminal:
+    def unapply(t: alice.tuprolog.Term): Option[Terminal] =
+      Registered.unapply(t)

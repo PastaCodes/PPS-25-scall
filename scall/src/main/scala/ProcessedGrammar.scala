@@ -1,35 +1,36 @@
 package it.unibo.scall
 
 import Element.*
-import util.*
-
-case class InternalNonterminal(name: String)
-type AnyNonterminal = Nonterminal | InternalNonterminal
-type AnySymbol = Terminal | AnyNonterminal
-extension (s: AnySymbol)
-  def name: String = s match
-    case Terminal(name, _, _) => name
-    case Nonterminal(name, _) => name
-    case InternalNonterminal(name) => name
-type SymbolSeq = Seq[AnySymbol]
-type Alternatives = Set[SymbolSeq]
-type Productions = MultiMap[AnyNonterminal, SymbolSeq]
-type PartialFollowings = MultiMap[AnyNonterminal, SymbolSeq]
-case class Following(productionHead: AnyNonterminal, followingSeq: SymbolSeq)
-type Followings = MultiMap[AnyNonterminal, Following]
+import ProcessedGrammar.*
+import util.CollectionUtils.*
 
 case class ProcessedGrammar(startSymbol: Nonterminal,
                             terminals: Seq[Terminal],
                             productions: Productions,
                             followings: Followings)
 
-case class VisitResult(alternatives: Alternatives,
-                       nonterminals: Set[Nonterminal] = Set.empty,
-                       productions: Productions = Map.empty,
-                       partialFollowings: PartialFollowings = Map.empty,
-                       followings: Followings = Map.empty)
-
 object ProcessedGrammar:
+
+  case class InternalNonterminal(name: String)
+  type AnyNonterminal = Nonterminal | InternalNonterminal
+  type AnySymbol = Terminal | AnyNonterminal
+  extension (s: AnySymbol)
+    def name: String = s match
+      case Terminal(name, _, _) => name
+      case Nonterminal(name, _) => name
+      case InternalNonterminal(name) => name
+  type SymbolSeq = Seq[AnySymbol]
+  type Alternatives = Set[SymbolSeq]
+  type Productions = MultiMap[AnyNonterminal, SymbolSeq]
+  type PartialFollowings = MultiMap[AnyNonterminal, SymbolSeq]
+  case class Following(productionHead: AnyNonterminal, followingSeq: SymbolSeq)
+  type Followings = MultiMap[AnyNonterminal, Following]
+
+  case class VisitResult(alternatives: Alternatives,
+                         nonterminals: Set[Nonterminal] = Set.empty,
+                         productions: Productions = Map.empty,
+                         partialFollowings: PartialFollowings = Map.empty,
+                         followings: Followings = Map.empty)
   
   def of(g: Grammar, startSymbol: Nonterminal): ProcessedGrammar =
     val res = visit(startSymbol)
@@ -131,37 +132,37 @@ object ProcessedGrammar:
   private def repetitionNonterminal(t: Element): InternalNonterminal =
     InternalNonterminal(name = ZeroOrMore(t).show)
 
-object Alternatives:
-  def ofEps: Alternatives                                                   = Set(Seq.empty)
-  def ofSymbol(s: Symbol): Alternatives                                     = Set(Seq(s))
-  def ofConcat(t1: Alternatives, t2: Alternatives): Alternatives            = t1 productConcat t2
-  def ofAlternation(t1: Alternatives, t2: Alternatives): Alternatives       = t1 union t2
-  def ofOptional(t: Alternatives): Alternatives                             = t incl Seq.empty
-  def ofZeroOrMore(rep: InternalNonterminal): Alternatives                  = Set(Seq(rep))
-  def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives  = t eachAppend rep
+  private object Alternatives:
+    def ofEps: Alternatives                                                   = Set(Seq.empty)
+    def ofSymbol(s: Symbol): Alternatives                                     = Set(Seq(s))
+    def ofConcat(t1: Alternatives, t2: Alternatives): Alternatives            = t1 productConcat t2
+    def ofAlternation(t1: Alternatives, t2: Alternatives): Alternatives       = t1 union t2
+    def ofOptional(t: Alternatives): Alternatives                             = t incl Seq.empty
+    def ofZeroOrMore(rep: InternalNonterminal): Alternatives                  = Set(Seq(rep))
+    def ofOneOrMore(t: Alternatives, rep: InternalNonterminal): Alternatives  = t eachAppend rep
 
-object Productions:
-  def ofNonterminal(s: Nonterminal, b: Alternatives): Productions =
-    Map(s -> b)
-  def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
-    Map(rep -> (t eachAppend rep incl Seq.empty))
+  private object Productions:
+    def ofNonterminal(s: Nonterminal, b: Alternatives): Productions =
+      Map(s -> b)
+    def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
+      Map(rep -> (t eachAppend rep incl Seq.empty))
 
-object PartialFollowings:
-  def ofNonterminal(s: Nonterminal): PartialFollowings =
-    Map(s -> Set(Seq.empty))
-  def ofConcat(p1: PartialFollowings, p2: PartialFollowings, t2: Alternatives): PartialFollowings =
-    p1.mapValues1(_ productConcat t2) concat p2
-  def ofAlternation(p1: PartialFollowings, p2: PartialFollowings): PartialFollowings =
-    p1 unionAll p2
-  def ofOptional(p: PartialFollowings): PartialFollowings =
-    p
-  def ofZeroOrMore(rep: InternalNonterminal): PartialFollowings =
-    Map(rep -> Set(Seq.empty))
-  def ofOneOrMore(p: PartialFollowings, rep: InternalNonterminal): PartialFollowings =
-    p.mapValues1(_ eachAppend rep) updated (rep, Set(Seq.empty))
+  private object PartialFollowings:
+    def ofNonterminal(s: Nonterminal): PartialFollowings =
+      Map(s -> Set(Seq.empty))
+    def ofConcat(p1: PartialFollowings, p2: PartialFollowings, t2: Alternatives): PartialFollowings =
+      p1.mapValues1(_ productConcat t2) concat p2
+    def ofAlternation(p1: PartialFollowings, p2: PartialFollowings): PartialFollowings =
+      p1 unionAll p2
+    def ofOptional(p: PartialFollowings): PartialFollowings =
+      p
+    def ofZeroOrMore(rep: InternalNonterminal): PartialFollowings =
+      Map(rep -> Set(Seq.empty))
+    def ofOneOrMore(p: PartialFollowings, rep: InternalNonterminal): PartialFollowings =
+      p.mapValues1(_ eachAppend rep) updated (rep, Set(Seq.empty))
 
-object Followings:
-  def ofNonterminal(s: Nonterminal, p: PartialFollowings): Followings =
-    p.mapValues1(_.map(Following(s, _)))
-  def ofOrMore(p: PartialFollowings, rep: InternalNonterminal, t: Alternatives): Followings =
-    p.mapValues1(_.map(q => Following(rep, q appended rep))) updated (rep, Set(Following(rep, Seq.empty)))
+  private object Followings:
+    def ofNonterminal(s: Nonterminal, p: PartialFollowings): Followings =
+      p.mapValues1(_.map(Following(s, _)))
+    def ofOrMore(p: PartialFollowings, rep: InternalNonterminal, t: Alternatives): Followings =
+      p.mapValues1(_.map(q => Following(rep, q appended rep))) updated (rep, Set(Following(rep, Seq.empty)))

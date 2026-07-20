@@ -1,5 +1,7 @@
 package it.unibo.scall
 
+import ProcessedGrammar.{Following, InternalNonterminal}
+
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 
