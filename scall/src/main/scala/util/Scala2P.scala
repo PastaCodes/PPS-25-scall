@@ -36,7 +36,7 @@ def compoundTerm(functor: String, args: Term*): Struct = Struct.of(functor, args
 def variable(name: String): Var = Var.of(name)
 
 extension (solution: SolveInfo)
-  def mapBinding[B](variable: Var)(mapper: PartialFunction[Term, B]): B =
+  def mapBinding[B](variable: Var)(mapper: Term => B): B =
     mapper(solution.getVarValue(variable.getName))
   def mapBindingAtom[B](variable: Var)(mapper: String => B): B =
     mapper(solution.getVarValue(variable.getName).asInstanceOf[Struct].getName)
@@ -46,8 +46,8 @@ object Atom:
     t match
       case s: Struct if s.getName != null && s.getArity == 0 && s.getName != "[]" => Some(s.getName)
       case _ => None
-object EmptyList:
-  def unapply(t: Term): Boolean =
+object Int:
+  def unapply(t: Term): Option[scala.Int] =
     t match
-      case s: Struct if s.getName == "[]" && s.getArity == 0 => true
-      case _ => false
+      case i: alice.tuprolog.Int => Some(i.intValue())
+      case _ => None

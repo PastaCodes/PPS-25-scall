@@ -18,7 +18,8 @@ type PartialFollowings = MultiMap[AnyNonterminal, SymbolSeq]
 case class Following(productionHead: AnyNonterminal, followingSeq: SymbolSeq)
 type Followings = MultiMap[AnyNonterminal, Following]
 
-case class ProcessedGrammar(terminals: Seq[Terminal],
+case class ProcessedGrammar(startSymbol: Nonterminal,
+                            terminals: Seq[Terminal],
                             productions: Productions,
                             followings: Followings)
 
@@ -32,7 +33,7 @@ object ProcessedGrammar:
   
   def of(g: Grammar, startSymbol: Nonterminal): ProcessedGrammar =
     val res = visit(startSymbol)
-    ProcessedGrammar(g.terminals, res.productions, res.followings)
+    ProcessedGrammar(startSymbol, g.terminals, res.productions, res.followings)
   
   def visit(e: Element, skipNonterminals: Set[Nonterminal] = Set.empty): VisitResult =
     given Set[Nonterminal] = skipNonterminals

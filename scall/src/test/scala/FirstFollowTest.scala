@@ -14,7 +14,7 @@ class FirstFollowTest extends AnyFunSuite:
 
   // noinspection ForwardReference, TypeAnnotation
   object TestGrammar extends Grammar:
-    val x = -> (y ++ a ++ b ++ c | a ++ c)
+    val x = -> (y ++ a ++ b ++ c | a ++ c ++ y ++ z)
     val y = -> (c ++ d | z)
     val z = -> (Eps)
     val a = -> ("a")
@@ -35,6 +35,7 @@ class FirstFollowTest extends AnyFunSuite:
   test("should compute FOLLOW sets"):
     val g = ProcessedGrammar.of(TestGrammar, TestGrammar.x)
     FirstFollow.compute(g).followSets shouldBe Map(
-      y -> Set(a),
-      z -> Set(a)
+      x -> Set(Eof),
+      y -> Set(a, Eof),
+      z -> Set(a, Eof)
     )
