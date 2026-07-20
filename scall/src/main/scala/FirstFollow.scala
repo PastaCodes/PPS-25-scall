@@ -38,7 +38,7 @@ object FirstFollow:
       FirstFollow(firstSets, followSets)
 
   private def terminalsKnowledge(using g: ProcessedGrammar) =
-    g.terminals.map: t =>
+    g.terminals.filter(!_.isSkipped).map: t =>
       compoundTerm("terminal", t.name)
 
   private def productionsKnowledge(using g: ProcessedGrammar) =
