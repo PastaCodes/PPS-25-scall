@@ -42,6 +42,7 @@ object FirstFollow:
       FirstFollow(firstSets, followSets)
 
   private def grammarKnowledge(using g: ProcessedGrammar) =
+    import scala.language.implicitConversions
     val t = g.terminals.filter(!_.isSkipped).map: t =>
       compoundTerm("terminal", t.name)
     val p = g.productions.mapEntries: (head, body) =>
