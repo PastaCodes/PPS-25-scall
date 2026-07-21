@@ -1,4 +1,5 @@
 package it.unibo.scall
+package util
 
 extension [A](self: Set[Seq[A]])
   infix def eachAppend(e: A): Set[Seq[A]] =
