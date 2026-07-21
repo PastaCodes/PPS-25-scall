@@ -23,18 +23,16 @@ object ParsingTable:
     given ProcessedGrammar = grammar
     registerScope:
       withKnowledge(grammarKnowledge): () =>
-        val nt = variable("X")
-        val t = variable("A")
-        val b = variable("B")
-        val parseTableGoal = compoundTerm("parsing_cell", nt, t, b)
+        val X = variable("X"); val A = variable("A"); val B = variable("B")
+        val parseTableGoal = compoundTerm("parsing_cell", X, A, B)
         parseTableGoal.solveAll.collectSuccess { s => (
           (
-            s.getRegistered[AnyNonterminal](nt),
-            s.get(t):
+            s.getRegistered[AnyNonterminal](X),
+            s.get(A):
               case RegisteredTerminal(t) => t
               case Int(1) => Eof
           ),
-          s.getRegisteredList[AnySymbol](b)
+          s.getRegisteredList[AnySymbol](B)
         )}.toMap
 
   private def grammarKnowledge(using g: ProcessedGrammar, scope: RegisterScope) =

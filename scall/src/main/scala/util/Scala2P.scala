@@ -1,9 +1,9 @@
 package it.unibo.scall
 package util
 
-import alice.tuprolog.*
 import alice.tuprolog.exceptions.InvalidObjectIdException
 import alice.tuprolog.lib.OOLibrary
+import alice.tuprolog.{Int as _, *}
 
 import java.io.InputStream
 import scala.jdk.CollectionConverters.{IterableHasAsJava, IteratorHasAsScala}
@@ -77,7 +77,7 @@ object Scala2P:
           if ct.runtimeClass.isInstance(value) then Some(value.asInstanceOf[A]) else None
         case _ => None
   object Int:
-    def unapply(t: Term): Option[scala.Int] =
+    def unapply(t: Term): Option[Int] =
       t match
         case i: alice.tuprolog.Int => Some(i.intValue())
         case _ => None
