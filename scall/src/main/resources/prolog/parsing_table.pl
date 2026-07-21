@@ -9,5 +9,5 @@ follow(X, 1) :- start_symbol(X). % 1 indicates $, end of file
 follow(X, A) :- following(X, S, _), first_str(S, A), A \== 0.
 follow(X, A) :- following(X, S, H), H \== X, first_str(S, 0), follow(H, A).
 
-parse_cell(X, A, B) :- production(X, B), first_str(B, A), A \== 0.
-parse_cell(X, A, B) :- production(X, B), first_str(B, 0), follow(X, A).
+parsing_cell(X, A, B) :- production(X, B), first_str(B, A), A \== 0.
+parsing_cell(X, A, B) :- production(X, B), first_str(B, 0), follow(X, A).

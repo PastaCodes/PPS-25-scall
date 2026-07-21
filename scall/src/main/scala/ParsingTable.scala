@@ -6,27 +6,27 @@ import util.CollectionUtils.mapEntries
 import util.Scala2P
 import util.Scala2P.{*, given}
 
-object ParseTable:
+object ParsingTable:
 
   case object Eof
   type TerminalOrEof = Terminal | Eof.type
-  type ParseTable = Map[(AnyNonterminal, TerminalOrEof), SymbolSeq]
+  type ParsingTable = Map[(AnyNonterminal, TerminalOrEof), SymbolSeq]
 
-  private val theoryFile = "/prolog/parse_table.pl"
+  private val theoryFile = "/prolog/parsing_table.pl"
 
   private lazy val engine = engineWithTheoryFile(
     getClass.getResourceAsStream(theoryFile)
   )
   given Scala2P = engine
 
-  def compute(grammar: ProcessedGrammar): ParseTable =
+  def compute(grammar: ProcessedGrammar): ParsingTable =
     given ProcessedGrammar = grammar
     registerScope:
       withKnowledge(grammarKnowledge): () =>
         val nt = variable("X")
         val t = variable("A")
         val b = variable("B")
-        val parseTableGoal = compoundTerm("parse_cell", nt, t, b)
+        val parseTableGoal = compoundTerm("parsing_cell", nt, t, b)
         parseTableGoal.solveAll.collectSuccess { s => (
           (
             s.getRegistered[AnyNonterminal](nt),

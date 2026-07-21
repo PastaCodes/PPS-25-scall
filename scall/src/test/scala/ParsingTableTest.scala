@@ -1,17 +1,17 @@
 package it.unibo.scall
 
 import Element.Eps
-import ParseTable.Eof
+import ParsingTable.Eof
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 
-class ParseTableTest extends AnyFunSuite:
+class ParsingTableTest extends AnyFunSuite:
 
   test("should load theory from file"):
     noException should be thrownBy
       util.Scala2P.engineWithTheoryFile(
-        getClass.getResourceAsStream("/prolog/parse_table.pl")
+        getClass.getResourceAsStream("/prolog/parsing_table.pl")
       )
 
   // noinspection ForwardReference, TypeAnnotation
@@ -26,9 +26,9 @@ class ParseTableTest extends AnyFunSuite:
 
   import TestGrammar.*
 
-  test("should compute parse table"):
+  test("should compute parsing table"):
     val g = ProcessedGrammar.of(TestGrammar, TestGrammar.x)
-    ParseTable.compute(g) shouldBe Map(
+    ParsingTable.compute(g) shouldBe Map(
       (x, a) -> Seq(y, a, b, c),
       (x, b) -> Seq(b, c, y, z),
       (x, c) -> Seq(y, a, b, c),
