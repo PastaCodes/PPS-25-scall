@@ -1,8 +1,9 @@
 package it.unibo.scall
+package lexer
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
-import Element.*
+import grammar.Grammar
 
 class LexerPrefixMatchFilterTest extends AnyFunSuite:
   
