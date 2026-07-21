@@ -1,7 +1,10 @@
 package it.unibo.scall
+package parser
 
-import Element.Eps
-import ParsingTable.Eof
+import grammar.Element.Eps
+import grammar.{Grammar, ProcessedGrammar}
+import parser.ParsingTable
+import parser.ParsingTable.Eof
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*

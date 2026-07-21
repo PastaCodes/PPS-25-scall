@@ -1,6 +1,8 @@
 package it.unibo.scall
+package lexer
 
-import Element.*
+import grammar.Element.Terminal
+
 import scala.annotation.tailrec
 
 class Lexer(terminals: Seq[Terminal]):

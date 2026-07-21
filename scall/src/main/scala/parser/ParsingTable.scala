@@ -1,7 +1,9 @@
 package it.unibo.scall
+package parser
 
-import Element.Terminal
-import ProcessedGrammar.{AnyNonterminal, AnySymbol, SymbolSeq}
+import grammar.Element.Terminal
+import grammar.ProcessedGrammar
+import grammar.ProcessedGrammar.{AnyNonterminal, AnySymbol, SymbolSeq}
 import util.CollectionUtils.mapEntries
 import util.Scala2P
 import util.Scala2P.{*, given}

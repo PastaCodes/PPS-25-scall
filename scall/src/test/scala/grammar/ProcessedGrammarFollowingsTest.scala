@@ -1,4 +1,5 @@
 package it.unibo.scall
+package grammar
 
 import ProcessedGrammar.{Following, InternalNonterminal}
 
