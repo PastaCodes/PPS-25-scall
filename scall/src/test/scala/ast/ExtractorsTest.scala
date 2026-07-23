@@ -1,10 +1,11 @@
 package it.unibo.scall.ast
 
+import it.unibo.scall.ast.Extractors.*
+import it.unibo.scall.grammar.Element.{Eps, Nonterminal, Terminal}
+import it.unibo.scall.grammar.InternalNonterminal
+import it.unibo.scall.lexer.Token
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
-import it.unibo.scall.Element.{Eps, Nonterminal, Terminal}
-import it.unibo.scall.{InternalNonterminal, Token}
-import it.unibo.scall.ast.Extractors.*
 
 class ExtractorsTest extends AnyFunSuite:
 
@@ -23,7 +24,7 @@ class ExtractorsTest extends AnyFunSuite:
       case _ => fail()
 
   test("Rule extractor extracts the name from an InternalNonterminal"):
-    val repRule = CSTNode.RuleNode(InternalNonterminal("statement*"), Seq.empty)
-    repRule match
+    val rule = CSTNode.RuleNode(InternalNonterminal("statement*"), Seq.empty)
+    rule match
       case Rule("statement*", children) => children shouldBe empty
       case _ => fail()

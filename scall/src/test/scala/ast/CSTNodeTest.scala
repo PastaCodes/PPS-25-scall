@@ -1,10 +1,11 @@
 package it.unibo.scall.ast
 
+import it.unibo.scall.grammar.Element.{Eps, Nonterminal, Terminal}
+import it.unibo.scall.ast.CSTNode.{LeafNode, RuleNode}
+import it.unibo.scall.grammar.InternalNonterminal
+import it.unibo.scall.lexer.Token
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
-import it.unibo.scall.Element.{Eps, Nonterminal, Terminal}
-import it.unibo.scall.{InternalNonterminal, Token}
-import it.unibo.scall.ast.CSTNode.{LeafNode, RuleNode}
 
 class CSTNodeTest extends AnyFunSuite:
 
