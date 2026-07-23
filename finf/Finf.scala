@@ -1,7 +1,7 @@
 package it.unibo.finf
 
-import it.unibo.scall.Element.Nonterminal
-import it.unibo.scall.Grammar
+import it.unibo.scall.grammar.Element.Nonterminal
+import it.unibo.scall.grammar.Grammar
 
 // noinspection ForwardReference, ScalaWeakerAccess, TypeAnnotation
 object Finf extends Grammar:
