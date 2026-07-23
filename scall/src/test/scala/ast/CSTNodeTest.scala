@@ -1,9 +1,10 @@
-package it.unibo.scall.ast
+package it.unibo.scall
+package ast
 
-import it.unibo.scall.grammar.Element.{Eps, Nonterminal, Terminal}
-import it.unibo.scall.ast.CSTNode.{LeafNode, RuleNode}
-import it.unibo.scall.grammar.InternalNonterminal
-import it.unibo.scall.lexer.Token
+import grammar.Element.{Eps, Nonterminal, Terminal}
+import ast.CSTNode.{LeafNode, RuleNode}
+import grammar.InternalNonterminal
+import lexer.Token
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 
