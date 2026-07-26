@@ -1,6 +1,8 @@
 package it.unibo.scall
 package grammar
 
+import ProcessedGrammar.InternalNonterminal
+
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 
