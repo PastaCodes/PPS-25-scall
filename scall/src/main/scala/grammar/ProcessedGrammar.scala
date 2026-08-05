@@ -122,3 +122,7 @@ object ProcessedGrammar:
       Map(s -> b)
     def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
       Map(rep -> (t eachAppend rep incl Seq.empty))
+
+  def longestCommonPrefix(first: SymbolSeq, second: SymbolSeq): (SymbolSeq, SymbolSeq, SymbolSeq) =
+    val size = (first zip second).takeWhile(_ == _).size
+    (first.take(size), first.drop(size), second.drop(size))
