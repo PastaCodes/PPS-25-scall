@@ -2,6 +2,7 @@ package it.unibo.scall
 package grammar
 
 import grammar.ProcessedGrammar.{Alternatives, InternalNonterminal}
+import util.CollectionUtils.flattenEntries
 
 import org.scalatest.OptionValues.convertOptionToValuable
 import org.scalatest.funsuite.AnyFunSuite
@@ -11,7 +12,12 @@ class LeftFactoringTest extends AnyFunSuite:
 
   // noinspection ForwardReference, TypeAnnotation
   object SimpleGrammar extends Grammar:
-    val X = -> (a ++ b | a ++ c)
+    val X = -> (
+      a ++ b ++ (a ++ b ++ (a | b) | b)
+    | b ++ b
+    | b ++ c
+    | c ++ a
+    )
     val a = -> ("a")
     val b = -> ("b")
     val c = -> ("c")
@@ -106,6 +112,32 @@ class LeftFactoringTest extends AnyFunSuite:
     )
     val f3 = (productions.keySet - f1 - f2).head
     productions shouldBe Map(
+      f1 -> Set(
+        Seq(a, b, f3),
+        Seq(b)
+      ),
+      f2 -> Set(
+        Seq(b),
+        Seq(c)
+      ),
+      f3 -> Set(
+        Seq(a),
+        Seq(b)
+      )
+    )
+
+  test("should apply left factoring when visiting a production rule"):
+    val productions = ProcessedGrammar.visit(X).productions
+    val flat = productions.flattenEntries
+    val f1 = flat.collectFirst { case `X` -> Seq(`a`, `b`, f: InternalNonterminal) => f }.value
+    val f2 = flat.collectFirst { case `X` -> Seq(`b`, f: InternalNonterminal) => f }.value
+    val f3 = flat.collectFirst { case `f1` -> Seq(`a`, `b`, f: InternalNonterminal) => f }.value
+    productions shouldBe Map(
+      X -> Set(
+        Seq(a, b, f1),
+        Seq(b, f2),
+        Seq(c, a)
+      ),
       f1 -> Set(
         Seq(a, b, f3),
         Seq(b)

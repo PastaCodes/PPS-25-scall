@@ -14,11 +14,6 @@ object ProcessedGrammar:
   case class InternalNonterminal(name: String)
   type AnyNonterminal = Nonterminal | InternalNonterminal
   type AnySymbol = Terminal | AnyNonterminal
-  extension (s: AnySymbol)
-    def name: String = s match
-      case Terminal(name, _, _) => name
-      case Nonterminal(name, _) => name
-      case InternalNonterminal(name) => name
   type SymbolSeq = Seq[AnySymbol]
   type Alternatives = Set[SymbolSeq]
   type Productions = MultiMap[AnyNonterminal, SymbolSeq]
@@ -116,7 +111,7 @@ object ProcessedGrammar:
 
   private object Productions:
     def ofNonterminal(s: Nonterminal, b: Alternatives): Productions =
-      Map(s -> b)
+      leftFactor(s, b)
     def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
       Map(rep -> (t eachAppend rep incl Seq.empty))
 
@@ -124,7 +119,7 @@ object ProcessedGrammar:
     InternalNonterminal(name = ZeroOrMore(t).show)
 
   private def factoringNonterminal(b: Alternatives): InternalNonterminal =
-    InternalNonterminal(name = b.map(_.map(_.name).mkString(" ")).mkString(" | "))
+    InternalNonterminal(name = s"(${b.show})")
 
   def longestCommonPrefix(first: SymbolSeq, second: SymbolSeq): (SymbolSeq, SymbolSeq, SymbolSeq) =
     val size = (first zip second).takeWhile(_ == _).size
@@ -154,3 +149,19 @@ object ProcessedGrammar:
             val fact = factoringNonterminal(factoredSuffixes)
             val newProductions = innerProductions + (fact -> factoredSuffixes)
             (alternatives + (prefix :+ fact), productions ++ newProductions)
+
+  def leftFactor(s: AnyNonterminal, b: Alternatives): Productions =
+    val (f, p) = leftFactor(b)
+    p + (s -> f)
+
+  extension (s: AnySymbol)
+    def name: String = s match
+      case Terminal(name, _, _) => name
+      case Nonterminal(name, _) => name
+      case InternalNonterminal(name) => name
+  extension (s: SymbolSeq)
+    def show: String = if s.isEmpty then "\u03b5" else s.map(_.name).mkString(" ")
+  extension (a: Alternatives)
+    def show: String = a.map(_.show).mkString(" | ")
+  extension (p: Productions)
+    def show: Iterable[String] = p.mapEntries { (head, body) => s"${head.name} \u27f6 ${body.show}" }
