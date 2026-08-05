@@ -44,10 +44,8 @@ object ParsingTable:
       compoundTerm("terminal", t)
     val p = g.productions.mapEntries: (head, body) =>
       compoundTerm("production", head, body)
-    val f = g.followings.mapEntries: (nt, f) =>
-      compoundTerm("following", nt, f.followingSeq, f.productionHead)
     val s = compoundTerm("start_symbol", g.startSymbol)
-    t ++ p ++ f :+ s
+    t ++ p :+ s
 
   private object RegisteredTerminal:
     def unapply(t: alice.tuprolog.Term)(using scope: RegisterScope): Option[Terminal] =
