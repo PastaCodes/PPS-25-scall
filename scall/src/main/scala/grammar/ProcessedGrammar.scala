@@ -126,3 +126,16 @@ object ProcessedGrammar:
   def longestCommonPrefix(first: SymbolSeq, second: SymbolSeq): (SymbolSeq, SymbolSeq, SymbolSeq) =
     val size = (first zip second).takeWhile(_ == _).size
     (first.take(size), first.drop(size), second.drop(size))
+
+  def prefixed(alternatives: Alternatives): Map[SymbolSeq, Alternatives] =
+    alternatives.foldLeft(Map.empty): (prefixed, alternative) =>
+      prefixed.keys.to(LazyList)
+        .map(prefix => prefix -> longestCommonPrefix(prefix, alternative))
+        .find:
+          case (_, (common, _, _)) => common.nonEmpty
+      match
+        case Some(prefix, (common, prefixSuffix, altSuffix)) =>
+          val newSuffixes = prefixed(prefix).map(prefixSuffix ++ _) incl altSuffix
+          prefixed - prefix + (common -> newSuffixes)
+        case None =>
+          prefixed + (alternative -> Set(Seq.empty))
