@@ -104,9 +104,6 @@ object ProcessedGrammar:
       v1.nonterminals union v2.nonterminals,
       v1.productions unionAll v2.productions
     )
-  
-  private def repetitionNonterminal(t: Element): InternalNonterminal =
-    InternalNonterminal(name = ZeroOrMore(t).show)
 
   private object Alternatives:
     def ofEps: Alternatives                                                   = Set(Seq.empty)
@@ -122,6 +119,12 @@ object ProcessedGrammar:
       Map(s -> b)
     def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
       Map(rep -> (t eachAppend rep incl Seq.empty))
+
+  private def repetitionNonterminal(t: Element): InternalNonterminal =
+    InternalNonterminal(name = ZeroOrMore(t).show)
+
+  private def factoringNonterminal(b: Alternatives): InternalNonterminal =
+    InternalNonterminal(name = b.map(_.map(_.name).mkString(" ")).mkString(" | "))
 
   def longestCommonPrefix(first: SymbolSeq, second: SymbolSeq): (SymbolSeq, SymbolSeq, SymbolSeq) =
     val size = (first zip second).takeWhile(_ == _).size
@@ -139,3 +142,15 @@ object ProcessedGrammar:
           prefixed - prefix + (common -> newSuffixes)
         case None =>
           prefixed + (alternative -> Set(Seq.empty))
+
+  def leftFactor(b: Alternatives): (Alternatives, Productions) =
+    ProcessedGrammar.prefixed(b)
+      .foldLeft[(Alternatives, Productions)]((Set.empty, Map.empty)):
+        case ((alternatives, productions), (prefix, suffixes)) =>
+          if suffixes.size == 1 then
+            (alternatives + prefix, productions)
+          else
+            val (factoredSuffixes, innerProductions) = leftFactor(suffixes)
+            val fact = factoringNonterminal(factoredSuffixes)
+            val newProductions = innerProductions + (fact -> factoredSuffixes)
+            (alternatives + (prefix :+ fact), productions ++ newProductions)
