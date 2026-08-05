@@ -113,7 +113,7 @@ object ProcessedGrammar:
     def ofNonterminal(s: Nonterminal, b: Alternatives): Productions =
       leftFactor(s, b)
     def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
-      Map(rep -> (t eachAppend rep incl Seq.empty))
+      leftFactor(rep, t eachAppend rep incl Seq.empty)
 
   private def repetitionNonterminal(t: Element): InternalNonterminal =
     InternalNonterminal(name = ZeroOrMore(t).show)

@@ -151,3 +151,26 @@ class LeftFactoringTest extends AnyFunSuite:
         Seq(b)
       )
     )
+
+  /*
+   * Visiting element (a b | a c)* should generate productions:
+   * R 🡒 a F
+   * R 🡒 ε
+   * F 🡒 b R
+   * F 🡒 c R
+   */
+  test("should apply left factoring when visiting a repetition element"):
+    val productions = ProcessedGrammar.visit((a ++ b | a ++ c).*).productions
+    val flat = productions.flattenEntries
+    val rep = flat.collectFirst { case (rep: InternalNonterminal) -> Seq() => rep }.value
+    val f = flat.collectFirst { case `rep` -> Seq(`a`, f: InternalNonterminal) => f }.value
+    productions shouldBe Map(
+      rep -> Set(
+        Seq(a, f),
+        Seq.empty
+      ),
+      f -> Set(
+        Seq(b, rep),
+        Seq(c, rep)
+      )
+    )
