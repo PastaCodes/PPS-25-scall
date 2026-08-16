@@ -78,5 +78,5 @@ class ParserTest extends AnyFunSuite:
 
   test("reports lexical errors coming from the lexer"):
     val parser = Parser(arithmetic, E)
-    val bad = Token.Error("$")
+    val bad: Token.Error = Token.Error("$")
     parser.parse(LazyList(bad)) shouldBe Left(ParseError.LexicalError(bad))
