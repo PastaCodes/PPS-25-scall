@@ -1,37 +1,29 @@
-package it.unibo.scall
-package ast
-
-import grammar.Element.Nonterminal
-import grammar.{InternalNonterminal, AnyNonterminal}
-import lexer.Token
-
-extension (sym: AnyNonterminal)
-  def name: String = sym match
-    case n: Nonterminal => n.name
-    case i: InternalNonterminal => i.name
-
-enum CSTNode:
-  case RuleNode(symbol: AnyNonterminal, children: Seq[CSTNode])
-  case LeafNode(token: Token)
-
-object Extractors:
-  object Rule:
-    def unapply(node: CSTNode): Option[(String, Seq[CSTNode])] = node match
-      case CSTNode.RuleNode(sym, children) => Some((sym.name, children))
-      case _ => None
-
-  object Leaf:
-    def unapply(node: CSTNode): Option[String] = node match
-      case CSTNode.LeafNode(token) => Some(token.lexeme)
-      case _ => None
+package it.unibo.scall.ast
 
 enum AstError:
   case DecodingError(message: String)
+  case UnexpectedNode(expected: String, actual: String)
+  case AggregateError(errors: Seq[AstError])
 
 trait AstDecoder[A]:
+  self =>
   def decode(node: CSTNode): Either[AstError, A]
 
+  def map[B](f: A => B): AstDecoder[B] = node =>
+    self.decode(node).map(f)
+
+  def flatMap[B](f: A => AstDecoder[B]): AstDecoder[B] = node =>
+    self.decode(node).flatMap(a => f(a).decode(node))
+
+  def orElse[B >: A](fallback: => AstDecoder[B]): AstDecoder[B] = node =>
+    self.decode(node)
+      .orElse(fallback.decode(node))
+
 object AstDecoder:
+
+  def pure[A](value: A): AstDecoder[A] = _ => Right(value)
+
+  def fail[A](error: AstError): AstDecoder[A] = _ => Left(error)
 
   extension (node: CSTNode)
     def as[A](using decoder: AstDecoder[A]): Either[AstError, A] =
@@ -39,9 +31,8 @@ object AstDecoder:
 
   extension (nodes: Seq[CSTNode])
     def decodeAll[A](using decoder: AstDecoder[A]): Either[AstError, Seq[A]] =
-      nodes.foldLeft[Either[AstError, Seq[A]]](Right(Seq.empty)) { (acc, node) =>
-        for
-          seq <- acc
-          a   <- node.as[A]
-        yield seq :+ a
-      }
+      val (errors, validNodes) = nodes.partitionMap(_.as[A])
+      errors match
+        case Seq() => Right(validNodes)
+        case Seq(single) => Left(single)
+        case multiple => Left(AstError.AggregateError(multiple))
