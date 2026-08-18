@@ -1,4 +1,5 @@
-package it.unibo.scall.ast
+package it.unibo.scall
+package ast
 
 enum AstError:
   case DecodingError(message: String)
