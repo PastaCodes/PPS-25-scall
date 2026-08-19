@@ -39,11 +39,11 @@ class LeftFactoringTest extends AnyFunSuite:
 
   test("should compute the longest common prefix"):
     val first = Seq(a, b, a, a)
-    val second = Seq(a, b, b, a)
+    val second = Seq(a, b, b)
     val (common, firstSuffix, secondSuffix) = ProcessedGrammar.longestCommonPrefix(first, second)
     common shouldBe Seq(a, b)
     firstSuffix shouldBe Seq(a, a)
-    secondSuffix shouldBe Seq(b, a)
+    secondSuffix shouldBe Seq(b)
 
   test("should group alternatives by common prefixes"):
     ProcessedGrammar.prefixed(alternatives2) shouldBe Map(

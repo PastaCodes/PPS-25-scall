@@ -122,8 +122,8 @@ object ProcessedGrammar:
     InternalNonterminal(name = s"(${b.show})")
 
   def longestCommonPrefix(first: SymbolSeq, second: SymbolSeq): (SymbolSeq, SymbolSeq, SymbolSeq) =
-    val size = (first zip second).takeWhile(_ == _).size
-    (first.take(size), first.drop(size), second.drop(size))
+    val prefix = (first zip second).takeWhile(_ == _).map(_._1)
+    (prefix, first.drop(prefix.size), second.drop(prefix.size))
 
   def prefixed(alternatives: Alternatives): Map[SymbolSeq, Alternatives] =
     alternatives.foldLeft(Map.empty): (prefixed, alternative) =>
