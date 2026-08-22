@@ -1,12 +1,13 @@
 package it.unibo.scall
 package ast
 
-import grammar.ProcessedGrammar.AnyNonterminal
+import grammar.ProcessedGrammar.{AnyNonterminal, AnySymbol}
 import lexer.Token
 
 enum CSTNode:
   case RuleNode(symbol: AnyNonterminal, children: Seq[CSTNode])
   case LeafNode(token: Token)
+  case ErrorNode(expected: AnySymbol, discarded: Seq[Token])
 
 object Extractors:
   object Rule:
