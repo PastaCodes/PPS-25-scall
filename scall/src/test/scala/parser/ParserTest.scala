@@ -28,6 +28,13 @@ class ParserTest extends AnyFunSuite:
   val P: Nonterminal = Nonterminal("P", () => Eps)
   val Prest: Nonterminal = Nonterminal("Prest", () => Eps)
 
+  def table(cells: ((AnyNonterminal, TerminalOrEof), SymbolSeq)*): ParsingTable =
+    cells.toMap
+
+  def token(t: Terminal): Token.Valid = Token.Valid(t, t.name)
+
+  def tokens(ts: Terminal*): LazyList[Token] = LazyList.from(ts).map(token)
+
   // the table of E -> T X; X -> plus E | ε; T -> zero | one
   val arithmetic: ParsingTable = table(
     (E, zero) -> Seq(T, X),
@@ -45,12 +52,6 @@ class ParserTest extends AnyFunSuite:
     (Prest, Eof) -> Seq.empty,
     (S, vaL) -> Seq(vaL, id, assign, num, semi),
   )
-
-  def table(cells: ((AnyNonterminal, TerminalOrEof), SymbolSeq)*): ParsingTable =
-    cells.toMap
-  def token(t: Terminal): Token.Valid = Token.Valid(t, t.name)
-  def tokens(ts: Terminal*): LazyList[Token] = LazyList.from(ts).map(token)
-
 
   test("parses a production with a single terminal"):
     val parser = Parser(table((S, a) -> Seq(a)), S)
@@ -96,7 +97,9 @@ class ParserTest extends AnyFunSuite:
     val bad: Token.Error = Token.Error("$")
     parser.parse(LazyList(bad)) shouldBe Left(ParseError.LexicalError(bad))
 
-  test("skip the offending token and parses the rest of the expression"):
+  // --- error recovery ---
+
+  test("skips the offending token and parses the rest of the expression"):
     val report = Parser(arithmetic, E).parseAll(tokens(one, plus, plus, zero))
     report.errors shouldBe Seq(ParseError.UnexpectedToken(Seq("one", "zero"), token(plus)))
     report.tree shouldBe RuleNode(E, Seq(
@@ -110,7 +113,7 @@ class ParserTest extends AnyFunSuite:
       )),
     ))
 
-  test("reports both error of a doubly broken expression"):
+  test("reports both errors of a doubly broken expression"):
     val report = Parser(arithmetic, E).parseAll(tokens(one, plus, plus, zero, plus, plus))
     report.errors shouldBe Seq(
       ParseError.UnexpectedToken(Seq("one", "zero"), token(plus)),
@@ -125,7 +128,7 @@ class ParserTest extends AnyFunSuite:
     report.errors shouldBe Seq(ParseError.LexicalError(bad), ParseError.LexicalError(worse))
     report.isValid shouldBe false
 
-  test("reports one error for broken statement"):
+  test("reports one error per broken statement"):
     // val id = ;   val id 5 ;
     val input = tokens(vaL, id, assign, semi, vaL, id, num, semi)
     val report = Parser(program, P).parseAll(input)
@@ -164,7 +167,7 @@ class ParserTest extends AnyFunSuite:
 
   test("gives up on garbage input without looping"):
     val report = Parser(program, P).parseAll(tokens(num, num, num))
-    report.errors.head shouldBe ParseError.UnexpectedToken(Seq("val"), token(num))
+    report.errors shouldBe Seq(ParseError.UnexpectedToken(Seq("val"), token(num)))
     report.tree shouldBe ErrorNode(P, Seq(token(num), token(num), token(num)))
 
   test("a wrong terminal is an error, not a crash"):
@@ -175,3 +178,7 @@ class ParserTest extends AnyFunSuite:
     val parser = Parser(arithmetic, E)
     parser.parse(tokens(one, plus, plus, zero)) shouldBe
       Left(ParseError.UnexpectedToken(Seq("one", "zero"), token(plus)))
+
+  test("a correct input produces no error at all"):
+    val report = Parser(arithmetic, E).parseAll(tokens(one, plus, zero))
+    report.isValid shouldBe true
