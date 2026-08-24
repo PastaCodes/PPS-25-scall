@@ -9,14 +9,14 @@ import AstDecoder.*
 import Finf.*
 
 object TypedExtractors:
-  extension (sym: AnyNonterminal)
+  extension (symbol: AnyNonterminal)
     def unapplySeq(node: CSTNode): Option[Seq[CSTNode]] = node match
-      case CSTNode.RuleNode(s, children) if s.name == sym.name => Some(children)
+      case CSTNode.RuleNode(s, children) if s.name == symbol.name => Some(children)
       case _ => None
 
-  extension (term: Terminal)
+  extension (terminal: Terminal)
     def unapply(node: CSTNode): Option[String] = node match
-      case CSTNode.LeafNode(Token.Valid(t, lexeme)) if t.name == term.name => Some(lexeme)
+      case CSTNode.LeafNode(Token.Valid(t, lexeme)) if t.name == terminal.name => Some(lexeme)
       case _ => None
 
   object AnyRule:
@@ -33,130 +33,149 @@ import TypedExtractors.*
 
 object FinfDecoder:
 
+  private def decodeRightRecursiveList[A](node: CSTNode)(extractElement: PartialFunction[Seq[CSTNode], (Either[AstError, A], CSTNode)]): Either[AstError, Seq[A]] = node match
+    case AnyRule(children*) =>
+      if children.isEmpty then Right(Seq.empty)
+      else extractElement.lift(children) match
+        case Some((decodedElement, remainingNodes)) =>
+          for
+            element     <- decodedElement
+            decodedRest <- decodeRightRecursiveList(remainingNodes)(extractElement)
+          yield element +: decodedRest
+        case None => Left(AstError.DecodingError("Invalid list structure"))
+    case _ => Left(AstError.UnexpectedNode("List rule", node.toString))
+
   given typeRefDecoder: AstDecoder[TypeRef] with
     def decode(node: CSTNode): Either[AstError, TypeRef] = node match
       /* int | bool | ID */
-      case typeRef(INT(_))  => Right(IntType)
-      case typeRef(BOOL(_)) => Right(BoolType)
-      case typeRef(ID(id))  => Right(CustomType(id))
+      case typeRef(INT(_))        => Right(IntType)
+      case typeRef(BOOL(_))       => Right(BoolType)
+      case typeRef(ID(typeName))  => Right(CustomType(typeName))
       case _ => Left(AstError.UnexpectedNode("typeRef", node.toString))
 
   given paramListDecoder: AstDecoder[Seq[Parameter]] with
-    def decode(node: CSTNode): Either[AstError, Seq[Parameter]] =
-      def extract(n: CSTNode): Either[AstError, Seq[Parameter]] = n match
-        case AnyRule() => Right(Seq.empty)
-        /* ID ':' typeRef */
-        case AnyRule(ID(id), COLON(_), tpeNode, next) =>
-          for tpe <- tpeNode.as[TypeRef]; rest <- extract(next) yield Parameter(id, tpe) +: rest
-        /* ',' ID ':' typeRef */
-        case AnyRule(COMMA(_), ID(id), COLON(_), tpeNode, next) =>
-          for tpe <- tpeNode.as[TypeRef]; rest <- extract(next) yield Parameter(id, tpe) +: rest
-        case _ => Left(AstError.DecodingError("Invalid parameter list"))
-      extract(node)
+    def decode(node: CSTNode): Either[AstError, Seq[Parameter]] = decodeRightRecursiveList(node):
+      /* ID ':' typeRef */
+      case Seq(ID(paramName), COLON(_), typeNode, remainingNodes) =>
+        (typeNode.as[TypeRef].map(Parameter(paramName, _)), remainingNodes)
+      /* ',' ID ':' typeRef */
+      case Seq(COMMA(_), ID(paramName), COLON(_), typeNode, remainingNodes) =>
+        (typeNode.as[TypeRef].map(Parameter(paramName, _)), remainingNodes)
 
   given argListDecoder: AstDecoder[Seq[Expr]] with
-    def decode(node: CSTNode): Either[AstError, Seq[Expr]] =
-      def extract(n: CSTNode): Either[AstError, Seq[Expr]] = n match
-        case AnyRule() => Right(Seq.empty)
-        /* expression */
-        case AnyRule(exprNode, next) =>
-          for e <- exprNode.as[Expr]; rest <- extract(next) yield e +: rest
-        /* ',' expression */
-        case AnyRule(COMMA(_), exprNode, next) =>
-          for e <- exprNode.as[Expr]; rest <- extract(next) yield e +: rest
-        case _ => Left(AstError.DecodingError("Invalid argument list"))
-      extract(node)
+    def decode(node: CSTNode): Either[AstError, Seq[Expr]] = decodeRightRecursiveList(node):
+      /* expression */
+      case Seq(exprNode, remainingNodes) =>
+        (exprNode.as[Expr], remainingNodes)
+      /* ',' expression */
+      case Seq(COMMA(_), exprNode, remainingNodes) =>
+        (exprNode.as[Expr], remainingNodes)
 
   given declListDecoder: AstDecoder[Seq[Declaration]] with
-    def decode(node: CSTNode): Either[AstError, Seq[Declaration]] =
-      def extract(n: CSTNode): Either[AstError, Seq[Declaration]] = n match
-        case AnyRule() => Right(Seq.empty)
-        /* declaration */
-        case AnyRule(decl, next) =>
-          for d <- decl.as[Declaration]; rest <- extract(next) yield d +: rest
-        case _ => Left(AstError.DecodingError("Invalid declaration list"))
-      extract(node)
+    def decode(node: CSTNode): Either[AstError, Seq[Declaration]] = decodeRightRecursiveList(node):
+      /* declaration */
+      case Seq(declNode, remainingNodes) =>
+        (declNode.as[Declaration], remainingNodes)
 
   given exprDecoder: AstDecoder[Expr] with
     def decode(node: CSTNode): Either[AstError, Expr] = node match
-      case expression(weak) =>
-        weak.as[Expr]
+      case expression(weakExprNode) =>
+        weakExprNode.as[Expr]
       /* expression OP expression */
-      case expression(leftNode, AnyToken(op), rightNode) =>
-        for left <- leftNode.as[Expr]; right <- rightNode.as[Expr] yield BinaryOp(op, left, right)
+      case expression(leftNode, AnyToken(operator), rightNode) =>
+        for
+          leftExpr  <- leftNode.as[Expr]
+          rightExpr <- rightNode.as[Expr]
+        yield BinaryOp(operator, leftExpr, rightExpr)
       /* '(' expression ')' */
-      case weakExpression(LPAREN(_), expr, RPAREN(_)) =>
-        expr.as[Expr]
+      case weakExpression(LPAREN(_), exprNode, RPAREN(_)) =>
+        exprNode.as[Expr]
       /* if expression then '{' expression '}' else '{' expression '}' */
-      case weakExpression(IF(_), cond, THEN(_), LBRACE(_), thn, RBRACE(_), ELSE(_), LBRACE(_), els, RBRACE(_)) =>
-        for c <- cond.as[Expr]; t <- thn.as[Expr]; e <- els.as[Expr] yield If(c, t, e)
+      case weakExpression(IF(_), conditionNode, THEN(_), LBRACE(_), thenNode, RBRACE(_), ELSE(_), LBRACE(_), elseNode, RBRACE(_)) =>
+        for
+          conditionExpr <- conditionNode.as[Expr]
+          thenExpr      <- thenNode.as[Expr]
+          elseExpr      <- elseNode.as[Expr]
+        yield If(conditionExpr, thenExpr, elseExpr)
       /* print '(' argumentList ')' */
-      case weakExpression(PRINT(_), LPAREN(_), args, RPAREN(_)) =>
-        args.as[Seq[Expr]].map(Print(_))
+      case weakExpression(PRINT(_), LPAREN(_), argsNode, RPAREN(_)) =>
+        argsNode.as[Seq[Expr]].map(Print(_))
       /* new ID '(' argumentList ')' */
-      case weakExpression(NEW(_), ID(id), LPAREN(_), args, RPAREN(_)) =>
-        args.as[Seq[Expr]].map(New(id, _))
+      case weakExpression(NEW(_), ID(recordName), LPAREN(_), argsNode, RPAREN(_)) =>
+        argsNode.as[Seq[Expr]].map(New(recordName, _))
       /* ID '(' argumentList ')' */
-      case weakExpression(ID(func), LPAREN(_), args, RPAREN(_)) =>
-        args.as[Seq[Expr]].map(Call(func, _))
+      case weakExpression(ID(functionName), LPAREN(_), argsNode, RPAREN(_)) =>
+        argsNode.as[Seq[Expr]].map(Call(functionName, _))
       /* ID '.' ID */
-      case weakExpression(ID(obj), DOT(_), ID(field)) =>
-        Right(FieldAccess(obj, field))
+      case weakExpression(ID(recordName), DOT(_), ID(fieldName)) =>
+        Right(FieldAccess(recordName, fieldName))
       /* '!' weakExpression */
-      case weakExpression(NOT(_), expr) =>
-        expr.as[Expr].map(UnaryOp("!", _))
+      case weakExpression(NOT(_), exprNode) =>
+        exprNode.as[Expr].map(UnaryOp("!", _))
       /* '-' DIGITS */
-      case weakExpression(MINUS(_), DIGITS(digits)) =>
-        digits.toIntOption
-          .toRight(AstError.DecodingError(s"Number out of bounds: -$digits"))
-          .map(n => UnaryOp("-", IntLit(n)))
+      case weakExpression(MINUS(_), DIGITS(digitString)) =>
+        digitString.toIntOption
+          .toRight(AstError.DecodingError(s"Number out of bounds: -$digitString"))
+          .map(parsedNumber => UnaryOp("-", IntLit(parsedNumber)))
       /* DIGITS */
-      case weakExpression(DIGITS(digits)) =>
-        digits.toIntOption
-          .toRight(AstError.DecodingError(s"Number out of bounds: $digits"))
+      case weakExpression(DIGITS(digitString)) =>
+        digitString.toIntOption
+          .toRight(AstError.DecodingError(s"Number out of bounds: $digitString"))
           .map(IntLit(_))
       /* true | false | null | ID */
-      case weakExpression(TRUE(_))  => Right(BoolLit(true))
-      case weakExpression(FALSE(_)) => Right(BoolLit(false))
-      case weakExpression(NULL(_))  => Right(NullLit)
-      case weakExpression(ID(id))   => Right(Id(id))
+      case weakExpression(TRUE(_))      => Right(BoolLit(true))
+      case weakExpression(FALSE(_))     => Right(BoolLit(false))
+      case weakExpression(NULL(_))      => Right(NullLit)
+      case weakExpression(ID(identifier)) => Right(Id(identifier))
       case _ => Left(AstError.UnexpectedNode("expression", node.toString))
 
   given declDecoder: AstDecoder[Declaration] with
     def decode(node: CSTNode): Either[AstError, Declaration] = node match
-      case topDeclaration(child)    => child.as[Declaration]
-      case commonDeclaration(child) => child.as[Declaration]
+      case topDeclaration(declNode)    => declNode.as[Declaration]
+      case commonDeclaration(declNode) => declNode.as[Declaration]
       /* val ID ':' typeRef '=' expression ';' */
-      case valueDeclaration(VAL(_), ID(id), COLON(_), tpeNode, ASSIGN(_), exprNode, SEMI(_)) =>
-        for tpe <- tpeNode.as[TypeRef]; expr <- exprNode.as[Expr] yield ValDecl(id, tpe, expr)
-      /* record ID '(' parameterList ')' ';' */
-      case recordDeclaration(RECORD(_), ID(id), LPAREN(_), paramsNode, RPAREN(_), SEMI(_)) =>
-        paramsNode.as[Seq[Parameter]].map(RecordDecl(id, _))
-      /* functionSignature functionBody */
-      case functionDeclaration(sig, body) =>
+      case valueDeclaration(VAL(_), ID(valName), COLON(_), typeNode, ASSIGN(_), valueNode, SEMI(_)) =>
         for
-          (id, tpe, params) <- sig match
+          decodedType  <- typeNode.as[TypeRef]
+          decodedValue <- valueNode.as[Expr]
+        yield ValDecl(valName, decodedType, decodedValue)
+      /* record ID '(' parameterList ')' ';' */
+      case recordDeclaration(RECORD(_), ID(recordName), LPAREN(_), paramsNode, RPAREN(_), SEMI(_)) =>
+        paramsNode.as[Seq[Parameter]].map(RecordDecl(recordName, _))
+      /* functionSignature functionBody */
+      case functionDeclaration(signatureNode, bodyNode) =>
+        for
+          (funcName, returnType, parameters) <- signatureNode match
             /* fun ID ':' typeRef '(' parameterList ')' */
-            case functionSignature(FUN(_), ID(i), COLON(_), t, LPAREN(_), p, RPAREN(_)) =>
-              for tt <- t.as[TypeRef]; pp <- p.as[Seq[Parameter]] yield (i, tt, pp)
+            case functionSignature(FUN(_), ID(nameStr), COLON(_), typeNode, LPAREN(_), paramsNode, RPAREN(_)) =>
+              for
+                decodedType   <- typeNode.as[TypeRef]
+                decodedParams <- paramsNode.as[Seq[Parameter]]
+              yield (nameStr, decodedType, decodedParams)
             case _ => Left(AstError.DecodingError("Invalid function signature"))
-          (decls, expr) <- body match
+          (localDecls, bodyExpr) <- bodyNode match
             /* let commonDeclaration* in expression ';' */
-            case functionBody(LET(_), d, IN(_), e, SEMI(_)) =>
-              for dd <- d.as[Seq[Declaration]]; ee <- e.as[Expr] yield (dd, ee)
+            case functionBody(LET(_), declsNode, IN(_), exprNode, SEMI(_)) =>
+              for
+                declarations <- declsNode.as[Seq[Declaration]]
+                expression   <- exprNode.as[Expr]
+              yield (declarations, expression)
             /* expression ';' */
-            case functionBody(e, SEMI(_)) =>
-              e.as[Expr].map((Seq.empty, _))
+            case functionBody(exprNode, SEMI(_)) =>
+              exprNode.as[Expr].map((Seq.empty, _))
             case _ => Left(AstError.DecodingError("Invalid function body"))
-        yield FunDecl(id, tpe, params, decls, expr)
+        yield FunDecl(funcName, returnType, parameters, localDecls, bodyExpr)
       case _ => Left(AstError.UnexpectedNode("declaration", node.toString))
 
   given programDecoder: AstDecoder[Program] with
     def decode(node: CSTNode): Either[AstError, Program] = node match
       /* let topDeclaration* in expression ';' */
-      case program(LET(_), decls, IN(_), expr, SEMI(_)) =>
-        for d <- decls.as[Seq[Declaration]]; e <- expr.as[Expr] yield Program(d, e)
+      case program(LET(_), declsNode, IN(_), exprNode, SEMI(_)) =>
+        for
+          declarations   <- declsNode.as[Seq[Declaration]]
+          mainExpression <- exprNode.as[Expr]
+        yield Program(declarations, mainExpression)
       /* expression ';' */
-      case program(expr, SEMI(_)) =>
-        expr.as[Expr].map(Program(Seq.empty, _))
+      case program(exprNode, SEMI(_)) =>
+        exprNode.as[Expr].map(Program(Seq.empty, _))
       case _ => Left(AstError.UnexpectedNode("program", node.toString))
