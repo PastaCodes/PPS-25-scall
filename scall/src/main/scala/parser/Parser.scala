@@ -34,9 +34,9 @@ class Parser(table: ParsingTable, startSymbol: Nonterminal):
 
   private def parseTerminal(expected: Terminal, tokens: LazyList[Token]): ParseResult[CSTNode]=
     tokens.headOption match
-      case Some(token @ Token.Valid(`expected`, _)) =>
+      case Some(token @ Token.Valid(`expected`, _, _)) =>
         Right((LeafNode(token), tokens.tail))
-      case Some(error @ Token.Error(_)) =>
+      case Some(error @ Token.Error(_, _)) =>
         Left(LexicalError(error))
       case None =>
         Left(UnexpectedEndOfInput(Seq(expected.name)))
