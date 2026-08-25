@@ -2,7 +2,7 @@ package it.unibo.scall
 package parser
 
 import grammar.Element.Terminal
-import lexer.Token
+import lexer.{Position, Token}
 import parser.Parsing.*
 
 import org.scalatest.funsuite.AnyFunSuite
@@ -11,7 +11,7 @@ import org.scalatest.matchers.should.Matchers.*
 class ParsingTest extends AnyFunSuite:
 
   val a: Terminal = Terminal("a", "a".r)
-  val token: Token.Valid = Token.Valid(a, "a")
+  val token: Token.Valid = Token.Valid(a, "a", Position(1, 1))
   val input: LazyList[Token] = LazyList(token, token)
 
   val anError: ParseError = ParseError.UnexpectedEndOfInput(Seq("a"))

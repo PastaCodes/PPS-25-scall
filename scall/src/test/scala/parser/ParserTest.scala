@@ -4,7 +4,7 @@ package parser
 import ast.CSTNode.*
 import grammar.Element.{Eps, Nonterminal, Terminal}
 import grammar.ProcessedGrammar.{AnyNonterminal, SymbolSeq}
-import lexer.Token
+import lexer.{Position, Token}
 import parser.ParsingTable.{Eof, ParsingTable, TerminalOrEof}
 
 import org.scalatest.funsuite.AnyFunSuite
@@ -31,7 +31,7 @@ class ParserTest extends AnyFunSuite:
   def table(cells: ((AnyNonterminal, TerminalOrEof), SymbolSeq)*): ParsingTable =
     cells.toMap
 
-  def token(t: Terminal): Token.Valid = Token.Valid(t, t.name)
+  def token(t: Terminal): Token.Valid = Token.Valid(t, t.name, Position(1, 1))
 
   def tokens(ts: Terminal*): LazyList[Token] = LazyList.from(ts).map(token)
 
@@ -94,7 +94,7 @@ class ParserTest extends AnyFunSuite:
 
   test("reports lexical errors coming from the lexer"):
     val parser = Parser(arithmetic, E)
-    val bad: Token.Error = Token.Error("$")
+    val bad: Token.Error = Token.Error("$", Position(1, 1))
     parser.parse(LazyList(bad)) shouldBe Left(ParseError.LexicalError(bad))
 
   // --- error recovery ---
@@ -121,8 +121,8 @@ class ParserTest extends AnyFunSuite:
     )
 
   test("reports every lexical error instead of stopping at the first"):
-    val bad: Token.Error = Token.Error("$")
-    val worse: Token.Error = Token.Error("#")
+    val bad: Token.Error = Token.Error("$", Position(1, 1))
+    val worse: Token.Error = Token.Error("#", Position(1, 1))
     val input = LazyList(bad, token(one), worse, token(plus), token(zero))
     val report = Parser(arithmetic, E).parseAll(input)
     report.errors shouldBe Seq(ParseError.LexicalError(bad), ParseError.LexicalError(worse))
