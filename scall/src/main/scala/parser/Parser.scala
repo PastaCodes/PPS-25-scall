@@ -6,8 +6,8 @@ import ast.CSTNode.*
 import grammar.Element.{Nonterminal, Terminal}
 import grammar.ProcessedGrammar.{AnyNonterminal, AnySymbol, SymbolSeq}
 import lexer.Token
-import parser.ParsingTable.{Eof, ParsingTable}
-import parser.Parser.ParseResult
+import parser.ParsingTable.{Eof, ParsingTable, TerminalOrEof}
+import parser.Parsing.*
 
 enum ParseError:
   case UnexpectedToken(expected: Seq[String], found: Token.Valid)
@@ -15,61 +15,91 @@ enum ParseError:
   case LexicalError(token: Token.Error)
   case TrailingInput(token: Token)
 
-object Parser:
-  type ParseResult[A] = Either[ParseError, (A, LazyList[Token])]
+case class ParseReport(tree: CSTNode, errors: Seq[ParseError]):
+  def isValid: Boolean = errors.isEmpty
 
 class Parser(table: ParsingTable, startSymbol: Nonterminal):
   import ParseError.*
 
+  private type Sync = Set[TerminalOrEof]
+
+  def parseAll(tokens: LazyList[Token]): ParseReport =
+    val step = parseProgram.run(tokens)
+    ParseReport(step.value, step.errors)
+
   def parse(tokens: LazyList[Token]): Either[ParseError, CSTNode] =
-    parseSymbol(startSymbol, tokens).flatMap: (cst, rest) =>
-      rest.headOption match
-        case Some(extra) => Left(TrailingInput(extra))
-        case None => Right(cst)
+    val report = parseAll(tokens)
+    report.errors.headOption.toLeft(report.tree)
 
-  private def parseSymbol(symbol: AnySymbol, tokens: LazyList[Token]): ParseResult[CSTNode]=
-    symbol match
-      case terminal: Terminal => parseTerminal(terminal, tokens)
-      case nonTerminal: AnyNonterminal => parseNonterminal(nonTerminal, tokens)
+  private def parseProgram: Parsing[CSTNode] =
+    for
+      tree <- parseSymbol(startSymbol)(using Set(Eof))
+      _ <- trailingInput
+    yield tree
 
-  private def parseTerminal(expected: Terminal, tokens: LazyList[Token]): ParseResult[CSTNode]=
-    tokens.headOption match
-      case Some(token @ Token.Valid(`expected`, _, _)) =>
-        Right((LeafNode(token), tokens.tail))
-      case Some(error @ Token.Error(_, _)) =>
-        Left(LexicalError(error))
-      case None =>
-        Left(UnexpectedEndOfInput(Seq(expected.name)))
+  private def trailingInput: Parsing[Unit] =
+    peek.flatMap:
+      case Some(token) => record(TrailingInput(token))
+      case None => pure(())
 
-  private def parseNonterminal(nonterminal: AnyNonterminal, tokens: LazyList[Token]): ParseResult[CSTNode]=
-    lookahead(tokens).flatMap: next =>
-      table.get((nonterminal, next.map(_.terminal).getOrElse(Eof))) match
-        case Some(production) => parseSequence(production, tokens).map: (children, rest) =>
-          (RuleNode(nonterminal, children), rest)
-        case None => next match
-          case Some(token) => Left(UnexpectedToken(expectedFor(nonterminal), token))
-          case None => Left(UnexpectedEndOfInput(expectedFor(nonterminal)))
-
-  private def lookahead(tokens: LazyList[Token]): Either[ParseError, Option[Token.Valid]] =
-    tokens.headOption match
-      case Some(token: Token.Valid) => Right(Some(token))
-      case Some(error: Token.Error) => Left(LexicalError(error))
-      case None => Right(None)
-
-  private def parseSequence(symbols: SymbolSeq, tokens: LazyList[Token]): ParseResult[Seq[CSTNode]] =
-    symbols match
-      case Seq() => Right((Seq.empty, tokens))
-      case symbol :: rest =>
+  private def parseSymbol(symbol: AnySymbol)(using sync: Sync): Parsing[CSTNode] =
+    lookahead.flatMap: next =>
+      expand(symbol, next).getOrElse:
         for
-          (node, afterSymbol) <- parseSymbol(symbol, tokens)
-          (nodes, afterRest) <- parseSequence(rest, afterSymbol)
-        yield (node +: nodes, afterRest)
+          _ <- record(unexpected(symbol, next))
+          junk <- skipUntil(symbol.starters union sync)
+          resumed <- lookahead
+          node <- expand(symbol, resumed).getOrElse(pure(ErrorNode(symbol, junk)))
+        yield node
 
-  private def expectedFor(nonterminal: AnyNonterminal): Seq[String] =
-    table.keys
-      .collect { case (`nonterminal`, expected) => expected }
-      .map {
-        case t: Terminal => t.name
-        case Eof => "end of input"
-        }
-      .toSeq.sorted
+  private def expand(symbol: AnySymbol, next: Option[Token.Valid])(using Sync): Option[Parsing[CSTNode]] =
+    (symbol, next) match
+      case (terminal: Terminal, Some(token)) if token.terminal == terminal =>
+        Some(advance andThen pure(LeafNode(token)))
+      case (nonterminal: AnyNonterminal, _) =>
+        table.get((nonterminal, next.terminal)).map: production =>
+          parseSequence(production).map(RuleNode(nonterminal, _))
+      case _ => None
+
+  private def parseSequence(symbols: SymbolSeq)(using sync: Sync): Parsing[Seq[CSTNode]] =
+    symbols match
+      case Seq() => pure(Seq.empty)
+      case symbol +: rest =>
+        for
+          node <- parseSymbol(symbol)(using sync union rest.starters)
+          nodes <- parseSequence(rest)
+        yield node +: nodes
+
+  private def lookahead: Parsing[Option[Token.Valid]] =
+    peek.flatMap:
+      case Some(error: Token.Error) => record(LexicalError(error)) andThen advance andThen lookahead
+      case next => pure(next.collect { case valid: Token.Valid => valid})
+
+  private def skipUntil(resume: Sync): Parsing[Seq[Token.Valid]] =
+    lookahead.flatMap:
+      case Some(token) if !resume.contains(token.terminal) =>
+        advance andThen skipUntil(resume).map(token +: _)
+      case _ => pure(Seq.empty)
+
+  private def unexpected(symbol: AnySymbol, next: Option[Token.Valid]): ParseError =
+    val expected = symbol.starters.map(_.name).toSeq.sorted
+    next match
+      case Some(token) => UnexpectedToken(expected, token)
+      case None => UnexpectedEndOfInput(expected)
+
+  extension (symbol: AnySymbol)
+    private def starters: Sync = symbol match
+      case terminal: Terminal => Set(terminal)
+      case nonterminal: AnyNonterminal =>
+        table.keys.collect { case (`nonterminal`, terminal) => terminal}.toSet
+
+  extension (symbols: SymbolSeq)
+    private def starters: Sync = symbols.flatMap(_.starters).toSet
+
+  extension (next: Option[Token.Valid])
+    private def terminal: TerminalOrEof = next.map(_.terminal).getOrElse(Eof)
+
+  extension (terminal: TerminalOrEof)
+    private def name: String = terminal match
+      case t: Terminal => t.name
+      case Eof => "end of input"
