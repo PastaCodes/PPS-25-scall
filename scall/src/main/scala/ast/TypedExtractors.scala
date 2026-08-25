@@ -13,7 +13,7 @@ object TypedExtractors:
 
   extension (terminal: Terminal)
     def unapply(node: CSTNode): Option[String] = node match
-      case CSTNode.LeafNode(Token.Valid(t, lexeme)) if t.name == terminal.name => Some(lexeme)
+      case CSTNode.LeafNode(Token.Valid(t, lexeme, _)) if t.name == terminal.name => Some(lexeme)
       case _ => None
 
   object AnyRule:
@@ -23,5 +23,5 @@ object TypedExtractors:
 
   object AnyToken:
     def unapply(node: CSTNode): Option[String] = node match
-      case CSTNode.LeafNode(Token.Valid(_, lexeme)) => Some(lexeme)
+      case CSTNode.LeafNode(Token.Valid(_, lexeme, _)) => Some(lexeme)
       case _ => None
