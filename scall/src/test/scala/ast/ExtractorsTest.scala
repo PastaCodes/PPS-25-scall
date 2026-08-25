@@ -6,12 +6,12 @@ import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.Inside.inside
 import grammar.Element.{Eps, Nonterminal, Terminal}
 import grammar.ProcessedGrammar.InternalNonterminal
-import lexer.Token
+import lexer.{Position, Token}
 import ast.Extractors.*
 
 class ExtractorsTest extends AnyFunSuite:
 
-  private val leafNode = CSTNode.LeafNode(Token.Valid(Terminal("ID", "[a-z]+".r), "myVar"))
+  private val leafNode = CSTNode.LeafNode(Token.Valid(Terminal("ID", "[a-z]+".r), "myVar", Position(1, 1)))
   private val ruleNode = CSTNode.RuleNode(Nonterminal("statement", () => Eps), Seq(leafNode))
   private val internalRuleNode = CSTNode.RuleNode(InternalNonterminal("statement*"), Seq.empty)
 

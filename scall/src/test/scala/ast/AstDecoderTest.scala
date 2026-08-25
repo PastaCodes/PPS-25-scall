@@ -4,7 +4,7 @@ package ast
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 import grammar.Element.{Nonterminal, Terminal}
-import lexer.Token
+import lexer.{Position, Token}
 import ast.AstDecoder.*
 import ast.Extractors.*
 
@@ -27,7 +27,7 @@ class AstDecoderTest extends AnyFunSuite:
       case "NUM" => numTerminal
       case "OP" => opTerminal
       case _ => idTerminal
-    CSTNode.LeafNode(Token.Valid(terminal, lexeme))
+    CSTNode.LeafNode(Token.Valid(terminal, lexeme, Position(1, 1)))
 
   private def rule(name: String, children: CSTNode*): CSTNode.RuleNode =
     CSTNode.RuleNode(Nonterminal(name, () => null), children)

@@ -4,7 +4,7 @@ package parser
 import ast.CSTNode.*
 import grammar.Element.{Eps, Nonterminal, Terminal}
 import grammar.ProcessedGrammar.{AnyNonterminal, SymbolSeq}
-import lexer.Token
+import lexer.{Position, Token}
 import parser.ParsingTable.{Eof, ParsingTable, TerminalOrEof}
 
 import org.scalatest.funsuite.AnyFunSuite
@@ -24,7 +24,7 @@ class ParserTest extends AnyFunSuite:
   def table(cells: ((AnyNonterminal, TerminalOrEof), SymbolSeq)*): ParsingTable =
     cells.toMap
 
-  def token(t: Terminal): Token.Valid = Token.Valid(t, t.name)
+  def token(t: Terminal): Token.Valid = Token.Valid(t, t.name, Position(1, 1))
   def tokens(ts: Terminal*): LazyList[Token] = LazyList.from(ts).map(token)
 
   test("parses a production with a single terminal"):
@@ -78,5 +78,5 @@ class ParserTest extends AnyFunSuite:
 
   test("reports lexical errors coming from the lexer"):
     val parser = Parser(arithmetic, E)
-    val bad: Token.Error = Token.Error("$")
+    val bad: Token.Error = Token.Error("$", Position(1, 1))
     parser.parse(LazyList(bad)) shouldBe Left(ParseError.LexicalError(bad))

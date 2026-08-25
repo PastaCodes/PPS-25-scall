@@ -19,12 +19,11 @@ class LexerPrefixMatchFilterTest extends AnyFunSuite:
 
   val noSkippingLexer = Lexer(NoSkippingGrammar.terminals)
   val SkippingLexer = Lexer(SkippingGrammar.terminals)
-  
+
   test("Lexer should tokenise whitespace if not marked as skipped"):
     val tokens = noSkippingLexer.tokenize(" a b ").toList
-
     tokens.map(_.lexeme) shouldBe List(" ", "a", " ", "b", " ")
-    tokens.collect { case Token.Valid(t, _) => t } shouldBe List(
+    tokens.collect { case Token.Valid(t, _, _) => t } shouldBe List(
       NoSkippingGrammar.whitespaceRule,
       NoSkippingGrammar.idRule,
       NoSkippingGrammar.whitespaceRule,
@@ -34,9 +33,8 @@ class LexerPrefixMatchFilterTest extends AnyFunSuite:
 
   test("Lexer should automatically drop skipped terminals defined in grammar"):
     val tokens = SkippingLexer.tokenize(" a b  c ").toList
-
     tokens.map(_.lexeme) shouldBe List("a", "b", "c")
-    tokens.collect { case Token.Valid(t, _) => t } shouldBe List(
+    tokens.collect { case Token.Valid(t, _, _) => t } shouldBe List(
       SkippingGrammar.idRule,
       SkippingGrammar.idRule,
       SkippingGrammar.idRule
