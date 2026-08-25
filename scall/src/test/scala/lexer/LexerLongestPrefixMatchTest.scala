@@ -65,4 +65,3 @@ class LexerLongestPrefixMatchTest extends AnyFunSuite:
     tokens.map(_.lexeme) shouldBe List("123", "$", "#", "abc")
     tokens.collect { case Token.Valid(t, _, _) => t } shouldBe List(BasicGrammar.numRule, BasicGrammar.idRule)
     tokens.collect { case Token.Error(s, _) => s } shouldBe List("$", "#")
-      
