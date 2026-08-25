@@ -7,35 +7,24 @@ import util.CollectionUtils.*
 
 case class ProcessedGrammar(startSymbol: Nonterminal,
                             terminals: Seq[Terminal],
-                            productions: Productions,
-                            followings: Followings)
+                            productions: Productions)
 
 object ProcessedGrammar:
 
   case class InternalNonterminal(name: String)
   type AnyNonterminal = Nonterminal | InternalNonterminal
   type AnySymbol = Terminal | AnyNonterminal
-  extension (s: AnySymbol)
-    def name: String = s match
-      case Terminal(name, _, _) => name
-      case Nonterminal(name, _) => name
-      case InternalNonterminal(name) => name
   type SymbolSeq = Seq[AnySymbol]
   type Alternatives = Set[SymbolSeq]
   type Productions = MultiMap[AnyNonterminal, SymbolSeq]
-  type PartialFollowings = MultiMap[AnyNonterminal, SymbolSeq]
-  case class Following(productionHead: AnyNonterminal, followingSeq: SymbolSeq)
-  type Followings = MultiMap[AnyNonterminal, Following]
 
   case class VisitResult(alternatives: Alternatives,
                          nonterminals: Set[Nonterminal] = Set.empty,
-                         productions: Productions = Map.empty,
-                         partialFollowings: PartialFollowings = Map.empty,
-                         followings: Followings = Map.empty)
+                         productions: Productions = Map.empty)
   
   def of(g: Grammar, startSymbol: Nonterminal): ProcessedGrammar =
     val res = visit(startSymbol)
-    ProcessedGrammar(startSymbol, g.terminals, res.productions, res.followings)
+    ProcessedGrammar(startSymbol, g.terminals, res.productions)
   
   def visit(e: Element, skipNonterminals: Set[Nonterminal] = Set.empty): VisitResult =
     given Set[Nonterminal] = skipNonterminals
@@ -43,95 +32,73 @@ object ProcessedGrammar:
     e match
 
       case Eps =>
-        VisitResult(alternatives = Alternatives.ofEps)
+        VisitResult(Alternatives.ofEps)
       
       case s: Terminal =>
-        VisitResult(alternatives = Alternatives.ofSymbol(s))
+        VisitResult(Alternatives.ofSymbol(s))
       
       case s: Nonterminal =>
         if !skipNonterminals.contains(s) then
           visitUnary(s.rule())(
             alternativesFn      = _ => Alternatives.ofSymbol(s),
             addNonterminals     = Set(s),
-            addProductionsFn    = v => Productions.ofNonterminal(s, v.alternatives),
-            partialFollowingsFn = _ => PartialFollowings.ofNonterminal(s),
-            addFollowingsFn     = v => Followings.ofNonterminal(s, v.partialFollowings)
+            addProductionsFn    = v => Productions.ofNonterminal(s, v.alternatives)
           )(using skipNonterminals = skipNonterminals incl s)
         else
-          VisitResult(
-            alternatives = Alternatives.ofSymbol(s),
-            partialFollowings = PartialFollowings.ofNonterminal(s)
-          )
+          VisitResult(Alternatives.ofSymbol(s))
       
       case Concat(t1, t2) =>
         visitBinary(t1, t2)(
-          (v1, v2) => Alternatives.ofConcat(v1.alternatives, v2.alternatives),
-          (v1, v2) => PartialFollowings.ofConcat(v1.partialFollowings, v2.partialFollowings, v2.alternatives)
+          alternativesFn = (v1, v2) => Alternatives.ofConcat(v1.alternatives, v2.alternatives)
         )
       
       case Alternation(t1, t2) =>
         visitBinary(t1, t2)(
-          (v1, v2) => Alternatives.ofAlternation(v1.alternatives, v2.alternatives),
-          (v1, v2) => PartialFollowings.ofAlternation(v1.partialFollowings, v2.partialFollowings)
+          alternativesFn = (v1, v2) => Alternatives.ofAlternation(v1.alternatives, v2.alternatives)
         )
       
       case Optional(t) =>
         visitUnary(t)(
-          alternativesFn      = v => Alternatives.ofOptional(v.alternatives),
-          partialFollowingsFn = v => PartialFollowings.ofOptional(v.partialFollowings),
+          alternativesFn      = v => Alternatives.ofOptional(v.alternatives)
         )
       
       case ZeroOrMore(t) =>
         val repetition = repetitionNonterminal(t)
         visitUnary(t)(
           alternativesFn      = _ => Alternatives.ofZeroOrMore(repetition),
-          addProductionsFn    = v => Productions.ofOrMore(v.alternatives, repetition),
-          partialFollowingsFn = _ => PartialFollowings.ofZeroOrMore(repetition),
-          addFollowingsFn     = v => Followings.ofOrMore(v.partialFollowings, repetition, v.alternatives)
+          addProductionsFn    = v => Productions.ofOrMore(v.alternatives, repetition)
         )
       
       case OneOrMore(t) =>
         val repetition = repetitionNonterminal(t)
         visitUnary(t)(
           alternativesFn      = v => Alternatives.ofOneOrMore(v.alternatives, repetition),
-          addProductionsFn    = v => Productions.ofOrMore(v.alternatives, repetition),
-          partialFollowingsFn = v => PartialFollowings.ofOneOrMore(v.partialFollowings, repetition),
-          addFollowingsFn     = v => Followings.ofOrMore(v.partialFollowings, repetition, v.alternatives)
+          addProductionsFn    = v => Productions.ofOrMore(v.alternatives, repetition)
         )
   
   private def visitUnary(t: Element)
                         (alternativesFn: VisitResult => Alternatives,
                          addTerminals: Set[Terminal] = Set.empty,
                          addNonterminals: Set[Nonterminal] = Set.empty,
-                         addProductionsFn: VisitResult => Productions = _ => Map.empty,
-                         partialFollowingsFn: VisitResult => PartialFollowings,
-                         addFollowingsFn: VisitResult => Followings = _ => Map.empty)
+                         addProductionsFn: VisitResult => Productions = _ => Map.empty)
                         (using skipNonterminals: Set[Nonterminal]): VisitResult =
     val v = ProcessedGrammar.visit(t, skipNonterminals)
     VisitResult(
       alternativesFn(v),
       v.nonterminals union addNonterminals,
-      v.productions unionAll addProductionsFn(v),
-      partialFollowingsFn(v),
-      v.followings unionAll addFollowingsFn(v)
+      v.productions unionAll addProductionsFn(v)
     )
   
   private def visitBinary(t1: Element, t2: Element)
-                         (alternativesFn: (VisitResult, VisitResult) => Alternatives,
-                          partialFollowingsFn: (VisitResult, VisitResult) => PartialFollowings)
+                         (alternativesFn: (VisitResult, VisitResult) => Alternatives)
                          (using skipNonterminals: Set[Nonterminal]): VisitResult =
     val v1 = ProcessedGrammar.visit(t1, skipNonterminals)
     val v2 = ProcessedGrammar.visit(t2, skipNonterminals union v1.nonterminals)
     VisitResult(
       alternativesFn(v1, v2),
       v1.nonterminals union v2.nonterminals,
-      v1.productions unionAll v2.productions,
-      partialFollowingsFn(v1, v2),
-      v1.followings unionAll v2.followings
+      v1.productions unionAll v2.productions
     )
-  
-  private def repetitionNonterminal(t: Element): InternalNonterminal =
-    InternalNonterminal(name = ZeroOrMore(t).show)
 
   private object Alternatives:
     def ofEps: Alternatives                                                   = Set(Seq.empty)
@@ -144,26 +111,57 @@ object ProcessedGrammar:
 
   private object Productions:
     def ofNonterminal(s: Nonterminal, b: Alternatives): Productions =
-      Map(s -> b)
+      leftFactor(s, b)
     def ofOrMore(t: Alternatives, rep: InternalNonterminal): Productions =
-      Map(rep -> (t eachAppend rep incl Seq.empty))
+      leftFactor(rep, t eachAppend rep incl Seq.empty)
 
-  private object PartialFollowings:
-    def ofNonterminal(s: Nonterminal): PartialFollowings =
-      Map(s -> Set(Seq.empty))
-    def ofConcat(p1: PartialFollowings, p2: PartialFollowings, t2: Alternatives): PartialFollowings =
-      p1.mapValues1(_ productConcat t2) concat p2
-    def ofAlternation(p1: PartialFollowings, p2: PartialFollowings): PartialFollowings =
-      p1 unionAll p2
-    def ofOptional(p: PartialFollowings): PartialFollowings =
-      p
-    def ofZeroOrMore(rep: InternalNonterminal): PartialFollowings =
-      Map(rep -> Set(Seq.empty))
-    def ofOneOrMore(p: PartialFollowings, rep: InternalNonterminal): PartialFollowings =
-      p.mapValues1(_ eachAppend rep) updated (rep, Set(Seq.empty))
+  private def repetitionNonterminal(t: Element): InternalNonterminal =
+    InternalNonterminal(name = ZeroOrMore(t).show)
 
-  private object Followings:
-    def ofNonterminal(s: Nonterminal, p: PartialFollowings): Followings =
-      p.mapValues1(_.map(Following(s, _)))
-    def ofOrMore(p: PartialFollowings, rep: InternalNonterminal, t: Alternatives): Followings =
-      p.mapValues1(_.map(q => Following(rep, q appended rep))) updated (rep, Set(Following(rep, Seq.empty)))
+  private def factoringNonterminal(b: Alternatives): InternalNonterminal =
+    InternalNonterminal(name = s"(${b.show})")
+
+  def longestCommonPrefix(first: SymbolSeq, second: SymbolSeq): (SymbolSeq, SymbolSeq, SymbolSeq) =
+    val prefix = (first zip second).takeWhile(_ == _).map(_._1)
+    (prefix, first.drop(prefix.size), second.drop(prefix.size))
+
+  def prefixed(alternatives: Alternatives): Map[SymbolSeq, Alternatives] =
+    alternatives.foldLeft(Map.empty): (prefixed, alternative) =>
+      prefixed.keys.to(LazyList)
+        .map(prefix => prefix -> longestCommonPrefix(prefix, alternative))
+        .find:
+          case (_, (common, _, _)) => common.nonEmpty
+      match
+        case Some(prefix, (common, prefixSuffix, altSuffix)) =>
+          val newSuffixes = prefixed(prefix).map(prefixSuffix ++ _) incl altSuffix
+          prefixed - prefix + (common -> newSuffixes)
+        case None =>
+          prefixed + (alternative -> Set(Seq.empty))
+
+  def leftFactor(b: Alternatives): (Alternatives, Productions) =
+    ProcessedGrammar.prefixed(b)
+      .foldLeft[(Alternatives, Productions)]((Set.empty, Map.empty)):
+        case ((alternatives, productions), (prefix, suffixes)) =>
+          if suffixes.size == 1 then
+            (alternatives + prefix, productions)
+          else
+            val (factoredSuffixes, innerProductions) = leftFactor(suffixes)
+            val fact = factoringNonterminal(factoredSuffixes)
+            val newProductions = innerProductions + (fact -> factoredSuffixes)
+            (alternatives + (prefix :+ fact), productions ++ newProductions)
+
+  def leftFactor(s: AnyNonterminal, b: Alternatives): Productions =
+    val (f, p) = leftFactor(b)
+    p + (s -> f)
+
+  extension (s: AnySymbol)
+    def name: String = s match
+      case Terminal(name, _, _) => name
+      case Nonterminal(name, _) => name
+      case InternalNonterminal(name) => name
+  extension (s: SymbolSeq)
+    def show: String = if s.isEmpty then "\u03b5" else s.map(_.name).mkString(" ")
+  extension (a: Alternatives)
+    def show: String = a.map(_.show).mkString(" | ")
+  extension (p: Productions)
+    def show: Iterable[String] = p.mapEntries { (head, body) => s"${head.name} \u27f6 ${body.show}" }

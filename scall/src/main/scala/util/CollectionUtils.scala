@@ -31,3 +31,5 @@ object CollectionUtils:
       keys.associateWith(k => self.getOrEmpty(k) union other.getOrEmpty(k))
     def mapEntries[B](mapper: (K, V) => B): Iterable[B] =
       self.flatMap((k, v) => v.map(mapper(k, _)))
+    def flattenEntries: Iterable[(K, V)] =
+      self.mapEntries(_ -> _)
