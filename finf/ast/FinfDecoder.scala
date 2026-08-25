@@ -2,48 +2,12 @@ package it.unibo.finf
 package ast
 
 import it.unibo.scall.ast.{AstDecoder, AstError, CSTNode}
-import it.unibo.scall.grammar.ProcessedGrammar.AnyNonterminal
-import it.unibo.scall.grammar.Element.Terminal
-import it.unibo.scall.lexer.Token
+import it.unibo.scall.ast.TypedExtractors.*
 import AstDecoder.*
+import AstDecoder.decodeRightRecursiveList
 import Finf.*
 
-object TypedExtractors:
-  extension (symbol: AnyNonterminal)
-    def unapplySeq(node: CSTNode): Option[Seq[CSTNode]] = node match
-      case CSTNode.RuleNode(s, children) if s.name == symbol.name => Some(children)
-      case _ => None
-
-  extension (terminal: Terminal)
-    def unapply(node: CSTNode): Option[String] = node match
-      case CSTNode.LeafNode(Token.Valid(t, lexeme)) if t.name == terminal.name => Some(lexeme)
-      case _ => None
-
-  object AnyRule:
-    def unapplySeq(node: CSTNode): Option[Seq[CSTNode]] = node match
-      case CSTNode.RuleNode(_, children) => Some(children)
-      case _ => None
-
-  object AnyToken:
-    def unapply(node: CSTNode): Option[String] = node match
-      case CSTNode.LeafNode(Token.Valid(_, lexeme)) => Some(lexeme)
-      case _ => None
-
-import TypedExtractors.*
-
 object FinfDecoder:
-
-  private def decodeRightRecursiveList[A](node: CSTNode)(extractElement: PartialFunction[Seq[CSTNode], (Either[AstError, A], CSTNode)]): Either[AstError, Seq[A]] = node match
-    case AnyRule(children*) =>
-      if children.isEmpty then Right(Seq.empty)
-      else extractElement.lift(children) match
-        case Some((decodedElement, remainingNodes)) =>
-          for
-            element     <- decodedElement
-            decodedRest <- decodeRightRecursiveList(remainingNodes)(extractElement)
-          yield element +: decodedRest
-        case None => Left(AstError.DecodingError("Invalid list structure"))
-    case _ => Left(AstError.UnexpectedNode("List rule", node.toString))
 
   given typeRefDecoder: AstDecoder[TypeRef] with
     def decode(node: CSTNode): Either[AstError, TypeRef] = node match
