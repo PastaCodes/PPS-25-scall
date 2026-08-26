@@ -1,24 +1,32 @@
 ### Product Backlog
 
+01/07/26
+
 | Priority | Item                                | Initial Size<br/>Estimate | Final<br/>Estimate |
 |----------|-------------------------------------|---------------------------|--------------------|
 | 1        | DSL constructs                      | 14                        | ?                  |
-| 2        | Grammar conversion from EBNF to CFG | 22                        | ?                  |
+| 2        | Grammar conversion from EBNF to CFG | 22                        | 24                 |
 | 3        | Lexical analysis                    | 15                        | ?                  |
-| 4        | Syntactical analysis                | 30                        | ?                  |
-| 5        | FINF language use case              | 10                        | ?                  |
-| 6        | CST to AST conversion constructs    | 12                        | ?                  |
+| 4        | Scala-tuProlog bindings             | 5                         | 6                  |
+| 5        | Syntactical analysis                | 30                        | ?                  |
+| 6        | FINF language use case              | 10                        | ?                  |
+| 7        | CST to AST conversion constructs    | 12                        | ?                  |
 
 ### Sprint Backlog #1
+
+01/07/26
 
 <table>
     <thead>
         <tr>
-            <th>Product Backlog Item</th>
-            <th>Sprint Task</th>
-            <th>Volunteer</th>
-            <th>Initial Estimate<br>of Effort</th>
-            <th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th>
+            <th rowspan="2">Product Backlog Item</th>
+            <th rowspan="2">Sprint Task</th>
+            <th rowspan="2">Volunteer</th>
+            <th rowspan="2">Initial Estimate<br>of Effort</th>
+            <th colspan="5">New&nbsp;Estimates&nbsp;at&nbsp;end&nbsp;of&nbsp;Day...</th>
+        </tr>
+        <tr>
+            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>    
         </tr>
     </thead>
     <tbody>
@@ -36,11 +44,35 @@
             <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
         </tr>
         <tr>
-            <td>Grammar conversion from EBNF to CFG</td>
-            <td>Naïve conversion</td>
+            <td rowspan="5">Grammar conversion from EBNF to CFG</td>
+            <td>Process element "alternatives"</td>
             <td>MB</td>
-            <td>12</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>2</td>
+            <td>1</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Process element productions</td>
+            <td>MB</td>
+            <td>2</td>
+            <td>1</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Process element "partial followings"</td>
+            <td>MB</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>1</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Process element "followings"</td>
+            <td>MB</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>1</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Recursive traversal of tree-like grammar</td>
+            <td>MB</td>
+            <td>4</td>
+            <td>3</td><td>3</td><td>4</td><td>2</td><td>0</td>
         </tr>
         <tr>
             <td>Lexical analysis</td>
@@ -54,36 +86,54 @@
             <td>FINF grammar</td>
             <td>MB</td>
             <td>2</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>1</td><td>1</td><td>1</td><td>1</td><td>0</td>
         </tr>
     </tbody>
 </table>
 
 ### Sprint Backlog #2
 
+18/07/26
+
 <table>
     <thead>
         <tr>
-            <th>Product Backlog Item</th>
-            <th>Sprint Task</th>
-            <th>Volunteer</th>
-            <th>Initial Estimate<br>of Effort</th>
-            <th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th>
+            <th rowspan="2">Product Backlog Item</th>
+            <th rowspan="2">Sprint Task</th>
+            <th rowspan="2">Volunteer</th>
+            <th rowspan="2">Initial Estimate<br>of Effort</th>
+            <th colspan="5">New&nbsp;Estimates&nbsp;at&nbsp;end&nbsp;of&nbsp;Day...</th>
+        </tr>
+        <tr>
+            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>    
         </tr>
     </thead>
     <tbody>
         <tr>
+            <td rowspan="2">Scala-tuProlog bindings</td>
+            <td>Functional-style wrapper methods</td>
+            <td>MB</td>
+            <td>3</td>
+            <td>1</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Registered objects management</td>
+            <td>MB</td>
+            <td>2</td>
+            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
             <td rowspan="3">Syntactical analysis</td>
             <td>Compute FIRST and FOLLOW sets</td>
             <td>MB</td>
-            <td>10</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>5</td>
+            <td>5</td><td>5</td><td>2</td><td>0</td><td>0</td>
         </tr>
         <tr>
             <td>Build the parsing table</td>
             <td>MB</td>
             <td>3</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>3</td><td>3</td><td>3</td><td>3</td><td>0</td>
         </tr>
         <tr>
             <td>Implement parser with the LL(1) algorithm</td>
@@ -103,23 +153,34 @@
 
 ### Sprint Backlog #3
 
+18/08/26
+
 <table>
     <thead>
         <tr>
-            <th>Product Backlog Item</th>
-            <th>Sprint Task</th>
-            <th>Volunteer</th>
-            <th>Initial Estimate<br>of Effort</th>
-            <th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th>
+            <th rowspan="2">Product Backlog Item</th>
+            <th rowspan="2">Sprint Task</th>
+            <th rowspan="2">Volunteer</th>
+            <th rowspan="2">Initial Estimate<br>of Effort</th>
+            <th colspan="5">New&nbsp;Estimates&nbsp;at&nbsp;end&nbsp;of&nbsp;Day...</th>
+        </tr>
+        <tr>
+            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>    
         </tr>
     </thead>
     <tbody>
         <tr>
-            <td>Grammar conversion from EBNF to CFG</td>
-            <td>Update logic to apply left factoring</td>
+            <td rowspan="2">Grammar conversion from EBNF to CFG</td>
+            <td>Group alternatives by common prefixes</td>
             <td>MB</td>
-            <td>10</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>4</td>
+            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Update conversion logic to apply left factoring</td>
+            <td>MB</td>
+            <td>5</td>
+            <td>5</td><td>5</td><td>2</td><td>0</td><td>0</td>
         </tr>
         <tr>
             <td>Lexical analysis</td>
@@ -147,14 +208,19 @@
 
 ### Sprint Backlog #4
 
+25/08/26
+
 <table>
     <thead>
         <tr>
-            <th>Product Backlog Item</th>
-            <th>Sprint Task</th>
-            <th>Volunteer</th>
-            <th>Initial Estimate<br>of Effort</th>
-            <th>D1</th><th>D2</th><th>D3</th><th>D4</th><th>D5</th>
+            <th rowspan="2">Product Backlog Item</th>
+            <th rowspan="2">Sprint Task</th>
+            <th rowspan="2">Volunteer</th>
+            <th rowspan="2">Initial Estimate<br>of Effort</th>
+            <th colspan="5">New&nbsp;Estimates&nbsp;at&nbsp;end&nbsp;of&nbsp;Day...</th>
+        </tr>
+        <tr>
+            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>    
         </tr>
     </thead>
     <tbody>
