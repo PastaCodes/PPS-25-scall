@@ -6,6 +6,7 @@ import ProcessedGrammar.InternalNonterminal
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 
+// Note that at this stage left factoring is not taken into account
 class ProcessedGrammarAlternativesTest extends AnyFunSuite:
 
   // noinspection ForwardReference, TypeAnnotation
