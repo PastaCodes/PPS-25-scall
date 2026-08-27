@@ -31,6 +31,7 @@ object ParsingTable:
   /** Computes a parsing table from the given grammar.
    *  The algorithm is implemented in prolog (see `/prolog/parsing_table.pl`),
    *  by computing the FIRST and FOLLOW sets for each nonterminal and production body.
+   *  If the supplied grammar is not LL(1), the result is undefined.
    */
   def compute(grammar: ProcessedGrammar): ParsingTable =
     given ProcessedGrammar = grammar
