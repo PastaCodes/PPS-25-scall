@@ -6,7 +6,7 @@ import ast.CSTNode.*
 import grammar.Element.{Nonterminal, Terminal}
 import grammar.ProcessedGrammar.{AnyNonterminal, AnySymbol, SymbolSeq}
 import lexer.Token
-import parser.ParsingTable.{Eof, ParsingTable, TerminalOrEof}
+import parser.ParsingTable.{Eoi, ParsingTable, TerminalOrEoi}
 import parser.Parsing.*
 
 enum ParseError:
@@ -21,7 +21,7 @@ case class ParseReport(tree: CSTNode, errors: Seq[ParseError]):
 class Parser(table: ParsingTable, startSymbol: Nonterminal):
   import ParseError.*
 
-  private type Sync = Set[TerminalOrEof]
+  private type Sync = Set[TerminalOrEoi]
 
   def parseAll(tokens: LazyList[Token]): ParseReport =
     val step = parseProgram.run(tokens)
@@ -33,7 +33,7 @@ class Parser(table: ParsingTable, startSymbol: Nonterminal):
 
   private def parseProgram: Parsing[CSTNode] =
     for
-      tree <- parseSymbol(startSymbol)(using Set(Eof))
+      tree <- parseSymbol(startSymbol)(using Set(Eoi))
       _ <- trailingInput
     yield tree
 
@@ -97,9 +97,9 @@ class Parser(table: ParsingTable, startSymbol: Nonterminal):
     private def starters: Sync = symbols.flatMap(_.starters).toSet
 
   extension (next: Option[Token.Valid])
-    private def terminal: TerminalOrEof = next.map(_.terminal).getOrElse(Eof)
+    private def terminal: TerminalOrEoi = next.map(_.terminal).getOrElse(Eoi)
 
-  extension (terminal: TerminalOrEof)
+  extension (terminal: TerminalOrEoi)
     private def name: String = terminal match
       case t: Terminal => t.name
-      case Eof => "end of input"
+      case Eoi => "end of input"

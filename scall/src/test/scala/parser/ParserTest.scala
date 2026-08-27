@@ -5,7 +5,7 @@ import ast.CSTNode.*
 import grammar.Element.{Eps, Nonterminal, Terminal}
 import grammar.ProcessedGrammar.{AnyNonterminal, SymbolSeq}
 import lexer.{Position, Token}
-import parser.ParsingTable.{Eof, ParsingTable, TerminalOrEof}
+import parser.ParsingTable.{Eoi, ParsingTable, TerminalOrEoi}
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
@@ -28,7 +28,7 @@ class ParserTest extends AnyFunSuite:
   val P: Nonterminal = Nonterminal("P", () => Eps)
   val Prest: Nonterminal = Nonterminal("Prest", () => Eps)
 
-  def table(cells: ((AnyNonterminal, TerminalOrEof), SymbolSeq)*): ParsingTable =
+  def table(cells: ((AnyNonterminal, TerminalOrEoi), SymbolSeq)*): ParsingTable =
     cells.toMap
 
   def token(t: Terminal): Token.Valid = Token.Valid(t, t.name, Position(1, 1))
@@ -40,7 +40,7 @@ class ParserTest extends AnyFunSuite:
     (E, zero) -> Seq(T, X),
     (E, one) -> Seq(T, X),
     (X, plus) -> Seq(plus, E),
-    (X, Eof) -> Seq.empty,
+    (X, Eoi) -> Seq.empty,
     (T, zero) -> Seq(zero),
     (T, one) -> Seq(one),
   )
@@ -49,7 +49,7 @@ class ParserTest extends AnyFunSuite:
   val program: ParsingTable = table(
     (P, vaL) -> Seq(S, Prest),
     (Prest, vaL) -> Seq(S, Prest),
-    (Prest, Eof) -> Seq.empty,
+    (Prest, Eoi) -> Seq.empty,
     (S, vaL) -> Seq(vaL, id, assign, num, semi),
   )
 
@@ -58,7 +58,7 @@ class ParserTest extends AnyFunSuite:
     parser.parse(tokens(a)) shouldBe Right(RuleNode(S, Seq(LeafNode(token(a)))))
 
   test("parses the empty production without consuming input"):
-    val parser = Parser(table((S, Eof) -> Seq.empty), S)
+    val parser = Parser(table((S, Eoi) -> Seq.empty), S)
     parser.parse(tokens()) shouldBe Right(RuleNode(S, Seq.empty))
 
   test("parses a nested expression producing the full CST"):

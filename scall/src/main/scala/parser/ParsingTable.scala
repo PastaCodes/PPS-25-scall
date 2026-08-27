@@ -8,11 +8,18 @@ import util.CollectionUtils.mapEntries
 import util.Scala2P
 import util.Scala2P.{*, given}
 
+/** Representation of an LL(1) [[ParsingTable parsing table]].
+ *  Cells are identified by a pair consisting of a nonterminal, which is the current parsing state,
+ *  and a terminal, which is read from input, or possibly an [[Eoi end of input]].
+ *  Values within the table are production bodies.
+ *  A parsing table can be computed from a [[ProcessedGrammar]] by means of the [[compute]] method,
+ *  which makes use of a [[Scala2P tuProlog engine]] and the theory from `/prolog/parsing_table.pl`.
+ */
 object ParsingTable:
 
-  case object Eof
-  type TerminalOrEof = Terminal | Eof.type
-  type ParsingTable = Map[(AnyNonterminal, TerminalOrEof), SymbolSeq]
+  case object Eoi // end of input
+  type TerminalOrEoi = Terminal | Eoi.type
+  type ParsingTable = Map[(AnyNonterminal, TerminalOrEoi), SymbolSeq]
 
   private val theoryFile = "/prolog/parsing_table.pl"
 
@@ -21,6 +28,10 @@ object ParsingTable:
   )
   given Scala2P = engine
 
+  /** Computes a parsing table from the given grammar.
+   *  The algorithm is implemented in prolog (see `/prolog/parsing_table.pl`),
+   *  by computing the FIRST and FOLLOW sets for each nonterminal and production body.
+   */
   def compute(grammar: ProcessedGrammar): ParsingTable =
     given ProcessedGrammar = grammar
     registerScope:
@@ -32,7 +43,7 @@ object ParsingTable:
             s.getRegistered[AnyNonterminal](X),
             s.get(A):
               case RegisteredTerminal(t) => t
-              case Int(1) => Eof
+              case Int(1) => Eoi
           ),
           s.getRegisteredList[AnySymbol](B)
         )}.toMap
