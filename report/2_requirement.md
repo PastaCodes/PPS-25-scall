@@ -13,7 +13,7 @@
 //TODO: FINF deve essere annesso come caso d'uso nella libreria all'interno del capitolo zero.
 
 ## Modello di dominio
-
+![](images/activityDiagramDomainModelOrizontal.svg)
 
 
 
