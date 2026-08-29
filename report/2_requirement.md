@@ -38,7 +38,7 @@
 Il diagramma di attività illustra il flusso di esecuzione per l'elaborazione del codice sorgente.
 La prima fase è costituita da tre input generati dell'utilizzatore:
 la definizione della grammatica, la stringa di input da analizzare e le regole di conversione CST-AST.
-Successivamente viene costruito il lexer e l'EBNF viene convertita in CFG, permettendo la generazione della parsing table necessaria per istanziare il parser.
+Successivamente viene costruito il lexer e l'EBNF viene convertita in CFG pura, permettendo la generazione della parsing table necessaria per istanziare il parser.
 In seguito a questa fase di costruzione inizia l'analisi lessicale, con il lexer che processa la stringa di input restituendo uno stream di token, preso a sua volta in input dal parser che, seguendo la parsing table, esegue l'analisi sintattica. La struttura viene validata andando a generare l'albero CST, il quale viene decodificato dal convertitore definito dall'utilizzatore che restituisce come output l'AST.
 
 
