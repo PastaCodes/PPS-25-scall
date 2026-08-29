@@ -2,10 +2,10 @@ package it.unibo.scall
 package parser
 
 import ast.CSTNode.*
-import grammar.Element.{Eps, Nonterminal, Terminal}
+import grammar.Element.{Eps, Nonterminal, Terminal, TerminalOrEoi, Eoi}
 import grammar.ProcessedGrammar.{AnyNonterminal, SymbolSeq}
 import lexer.{Position, Token}
-import parser.ParsingTable.{Eoi, ParsingTable, TerminalOrEoi}
+import parser.ParsingTable.ParsingTable
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
@@ -79,13 +79,13 @@ class ParserTest extends AnyFunSuite:
   test("reports an unexpected token with the expected alternatives"):
     val parser = Parser(arithmetic, E)
     parser.parse(tokens(plus)) shouldBe Left(
-      ParseError.UnexpectedToken(Seq("one", "zero"), token(plus))
+      ParseError.UnexpectedToken(Set(one, zero), token(plus))
     )
 
   test("reports an unexpected end of input"):
     val parser = Parser(arithmetic, E)
     parser.parse(tokens(one, plus)) shouldBe Left(
-      ParseError.UnexpectedEndOfInput(Seq("one", "zero"))
+      ParseError.UnexpectedEndOfInput(Set(one, zero))
     )
 
   test("reports input left over after a complete parse"):
@@ -101,7 +101,7 @@ class ParserTest extends AnyFunSuite:
 
   test("skips the offending token and parses the rest of the expression"):
     val report = Parser(arithmetic, E).parseAll(tokens(one, plus, plus, zero))
-    report.errors shouldBe Seq(ParseError.UnexpectedToken(Seq("one", "zero"), token(plus)))
+    report.errors shouldBe Seq(ParseError.UnexpectedToken(Set(one, zero), token(plus)))
     report.tree shouldBe RuleNode(E, Seq(
       RuleNode(T, Seq(LeafNode(token(one)))),
       RuleNode(X, Seq(
@@ -116,8 +116,8 @@ class ParserTest extends AnyFunSuite:
   test("reports both errors of a doubly broken expression"):
     val report = Parser(arithmetic, E).parseAll(tokens(one, plus, plus, zero, plus, plus))
     report.errors shouldBe Seq(
-      ParseError.UnexpectedToken(Seq("one", "zero"), token(plus)),
-      ParseError.UnexpectedToken(Seq("one", "zero"), token(plus)),
+      ParseError.UnexpectedToken(Set(one, zero), token(plus)),
+      ParseError.UnexpectedToken(Set(one, zero), token(plus)),
     )
 
   test("reports every lexical error instead of stopping at the first"):
@@ -133,8 +133,8 @@ class ParserTest extends AnyFunSuite:
     val input = tokens(vaL, id, assign, semi, vaL, id, num, semi)
     val report = Parser(program, P).parseAll(input)
     report.errors shouldBe Seq(
-      ParseError.UnexpectedToken(Seq("num"), token(semi)),
-      ParseError.UnexpectedToken(Seq("assign"), token(num)),
+      ParseError.UnexpectedToken(Set(num), token(semi)),
+      ParseError.UnexpectedToken(Set(assign), token(num)),
     )
 
   test("leaves an error node where a symbol was missing"):
@@ -144,7 +144,7 @@ class ParserTest extends AnyFunSuite:
         LeafNode(token(vaL)),
         LeafNode(token(id)),
         LeafNode(token(assign)),
-        ErrorNode(num, Seq.empty),
+        ErrorNode(Set(num), Seq.empty),
         LeafNode(token(semi)),
       )),
       RuleNode(Prest, Seq.empty),
@@ -153,7 +153,7 @@ class ParserTest extends AnyFunSuite:
   test("drops the tokens no rule was waiting for"):
     // val id = 5 5 ;  the extra number is discarded, the statement is complete
     val report = Parser(program, P).parseAll(tokens(vaL, id, assign, num, num, semi))
-    report.errors shouldBe Seq(ParseError.UnexpectedToken(Seq("semi"), token(num)))
+    report.errors shouldBe Seq(ParseError.UnexpectedToken(Set(semi), token(num)))
     report.tree shouldBe RuleNode(P, Seq(
       RuleNode(S, Seq(
         LeafNode(token(vaL)),
@@ -167,17 +167,17 @@ class ParserTest extends AnyFunSuite:
 
   test("gives up on garbage input without looping"):
     val report = Parser(program, P).parseAll(tokens(num, num, num))
-    report.errors shouldBe Seq(ParseError.UnexpectedToken(Seq("val"), token(num)))
-    report.tree shouldBe ErrorNode(P, Seq(token(num), token(num), token(num)))
+    report.errors shouldBe Seq(ParseError.UnexpectedToken(Set(vaL), token(num)))
+    report.tree shouldBe ErrorNode(Set(vaL), Seq(token(num), token(num), token(num)))
 
   test("a wrong terminal is an error, not a crash"):
     val report = Parser(table((S, vaL) -> Seq(vaL, id)), S).parseAll(tokens(vaL, num))
-    report.errors shouldBe Seq(ParseError.UnexpectedToken(Seq("id"), token(num)))
+    report.errors shouldBe Seq(ParseError.UnexpectedToken(Set(id), token(num)))
 
   test("parse keeps reporting only the first error"):
     val parser = Parser(arithmetic, E)
     parser.parse(tokens(one, plus, plus, zero)) shouldBe
-      Left(ParseError.UnexpectedToken(Seq("one", "zero"), token(plus)))
+      Left(ParseError.UnexpectedToken(Set(one, zero), token(plus)))
 
   test("a correct input produces no error at all"):
     val report = Parser(arithmetic, E).parseAll(tokens(one, plus, zero))

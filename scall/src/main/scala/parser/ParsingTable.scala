@@ -1,6 +1,7 @@
 package it.unibo.scall
 package parser
 
+import grammar.Element.{TerminalOrEoi, Eoi}
 import grammar.Element.Terminal
 import grammar.ProcessedGrammar
 import grammar.ProcessedGrammar.{AnyNonterminal, AnySymbol, SymbolSeq}
@@ -17,8 +18,6 @@ import util.Scala2P.{*, given}
  */
 object ParsingTable:
 
-  case object Eoi // end of input
-  type TerminalOrEoi = Terminal | Eoi.type
   type ParsingTable = Map[(AnyNonterminal, TerminalOrEoi), SymbolSeq]
 
   private val theoryFile = "/prolog/parsing_table.pl"
