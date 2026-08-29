@@ -2,15 +2,87 @@
 
 01/07/26
 
-| Priority | Item                                | Initial Size<br/>Estimate | Final<br/>Estimate |
-|----------|-------------------------------------|---------------------------|--------------------|
-| 1        | DSL constructs                      | 14                        | ?                  |
-| 2        | Grammar conversion from EBNF to CFG | 22                        | 24                 |
-| 3        | Lexical analysis                    | 15                        | ?                  |
-| 4        | Scala-tuProlog bindings             | 5                         | 6                  |
-| 5        | Syntactical analysis                | 30                        | ?                  |
-| 6        | FINF language use case              | 10                        | ?                  |
-| 7        | CST to AST conversion constructs    | 12                        | ?                  |
+<table>
+    <thead>
+        <tr>
+            <th>Priority</th>
+            <th>Item</th>
+            <th>Initial Size<br>Estimate</th>
+            <th>Final<br>Estimate</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>DSL constructs</td>
+            <td>14</td>
+            <td>?</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>Grammar conversion from EBNF to CFG</td>
+            <td>12</td>
+            <td>14</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>Lexical analysis</td>
+            <td>15</td>
+            <td>?</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>Scala-TuProlog bindings</td>
+            <td>5</td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>Syntactical analysis</td>
+            <td>30</td>
+            <td>?</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>FINF language use case</td>
+            <td>10</td>
+            <td>?</td>
+        </tr>
+        <tr>
+            <th colspan="4">Optional features</th>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td>Automatic left factoring</td>
+            <td>10</td>
+            <td>10</td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td>CST to AST conversion constructs</td>
+            <td>12</td>
+            <td>?</td>
+        </tr>
+        <tr>
+            <td>9</td>
+            <td>Support for disambiguation rules</td>
+            <td>15</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>10</td>
+            <td>Extension from LL(1) to LL(*)</td>
+            <td>30</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>11</td>
+            <td>Graphical display of ASTs</td>
+            <td>10</td>
+            <td>-</td>
+        </tr>
+    </tbody>
+</table>
 
 ### Sprint Backlog #1
 
@@ -170,19 +242,6 @@
     </thead>
     <tbody>
         <tr>
-            <td rowspan="2">Grammar conversion from EBNF to CFG</td>
-            <td>Group alternatives by common prefixes</td>
-            <td>MB</td>
-            <td>4</td>
-            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
-        </tr>
-        <tr>
-            <td>Update conversion logic to apply left factoring</td>
-            <td>MB</td>
-            <td>5</td>
-            <td>5</td><td>5</td><td>2</td><td>0</td><td>0</td>
-        </tr>
-        <tr>
             <td>Lexical analysis</td>
             <td>Include line number and column in tokens</td>
             <td>JT</td>
@@ -202,6 +261,19 @@
             <td>JT</td>
             <td>10</td>
             <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+        </tr>
+        <tr>
+            <td rowspan="2">Automatic left factoring</td>
+            <td>Group alternatives by common prefixes</td>
+            <td>MB</td>
+            <td>4</td>
+            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Update conversion logic to apply left factoring</td>
+            <td>MB</td>
+            <td>5</td>
+            <td>5</td><td>5</td><td>2</td><td>0</td><td>0</td>
         </tr>
     </tbody>
 </table>
