@@ -13,11 +13,22 @@
 //TODO: FINF deve essere annesso come caso d'uso nella libreria all'interno del capitolo zero.
 
 ## Modello di dominio
-![](images/activityDiagramDomainModelOrizontal.svg)
+![](images/domain_model.svg)
 
+### Terminologia
 
-
-
+* Un simbolo terminale, o semplicemente terminale, rappresenta un elemento lessicale non ulteriormente scomponibile.
+* Un simbolo nonterminale, o semplicemente nonterminale, rappresenta un elemento sintattico che definisce un insieme di combinazioni valide di simboli terminali e nonterminali.
+* Una grammatica libera dal contesto, o CFG, raccoglie un insieme di terminali e nonterminali che definiscono un linguaggio libero dal contesto.
+  In forma "pura" ogni nonterminale è definito da un insieme di produzioni, dove ciascuna ha un corpo costituito da una semplice sequenza di simboli.
+  In forma estesa di Backus-Naur, o EBNF, ogni nonterminale è definito da una singola regola, che però consente l'uso di operatori aggiuntivi, ad esempio di ripetizione.
+* Un lessema rappresenta una porzione significativa di una stringa di caratteri in input.
+* Un token associa ad un lessema un simbolo terminale della grammatica. 
+* Un lexer, o analizzatore lessicale, trasforma una stringa di caratteri in uno stream di token.
+* Un albero sintattico concreto, o CST, rappresenta la struttura sintattica di una stringa di input secondo le regole di una grammatica.
+* Un parser, o analizzatore sintattico, trasforma uno stream di token in un CST. Un parser LL(1) sfrutta assunzioni sul tipo di linguaggio, risultando in un algoritmo più semplice.
+* Una tabella di parsing è una struttura a supporto dell'algoritmo di parsing LL(1) che ne determina il comportamento in base allo stato attuale. 
+* Un albero sintattico astratto, o AST, è una rielaborazione della struttura sintattica incentrata sui contenuti di rilevanza semantica.
 
 ## Requisiti funzionali
 
