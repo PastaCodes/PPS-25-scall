@@ -14,7 +14,10 @@ enum Element:
   case OneOrMore(inner: Element)
 
 object Element:
+  case object Eoi // end of input
+
   type Symbol = Terminal | Nonterminal
+  type TerminalOrEoi = Terminal | Eoi.type
   
   extension (element: Element)
     def ++(other: Element): Concat = Concat(element, other)
