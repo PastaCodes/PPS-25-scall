@@ -1,5 +1,7 @@
 # Requirement specification
+
 ## Requisiti di business
+
 | ID | Testo del requisito                                                                                                                                                                           | Criterio di accettazione                                                                                                   |
 |----|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
 | B1 | Il sistema deve migliorare l'esperienza dell'utilizzatore nello sviluppo del frontend di un compilatore, richiedendo di implementare unicamente gli aspetti specifici del proprio linguaggio. | Il caso d'uso FINF non presenta dettagli implementativi di analisi lessicale e semantica.                                  |
@@ -13,6 +15,7 @@
 //TODO: FINF deve essere annesso come caso d'uso nella libreria all'interno del capitolo zero.
 
 ## Modello di dominio
+
 ![](images/domain_model.svg)
 
 ### Terminologia
@@ -29,6 +32,15 @@
 * Un parser, o analizzatore sintattico, trasforma uno stream di token in un CST. Un parser LL(1) sfrutta assunzioni sul tipo di linguaggio, risultando in un algoritmo più semplice.
 * Una tabella di parsing è una struttura a supporto dell'algoritmo di parsing LL(1) che ne determina il comportamento in base allo stato attuale. 
 * Un albero sintattico astratto, o AST, è una rielaborazione della struttura sintattica incentrata sui contenuti di rilevanza semantica.
+
+### Struttura e comportamento
+
+Il diagramma di attività illustra il flusso di esecuzione per l'elaborazione del codice sorgente.
+La prima fase è costituita da tre input generati dell'utilizzatore:
+la definizione della grammatica, la stringa di input da analizzare e le regole di conversione CST-AST.
+Successivamente viene costruito il lexer e l'EBNF viene convertita in CFG, permettendo la generazione della parsing table necessaria per istanziare il parser.
+In seguito a questa fase di costruzione inizia l'analisi lessicale, con il lexer che processa la stringa di input restituendo uno stream di token, preso a sua volta in input dal parser che, seguendo la parsing table, esegue l'analisi sintattica. La struttura viene validata andando a generare l'albero CST, il quale viene decodificato dal convertitore definito dall'utilizzatore che restituisce come output l'AST.
+
 
 ## Requisiti funzionali
 
