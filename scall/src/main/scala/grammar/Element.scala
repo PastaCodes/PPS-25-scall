@@ -43,3 +43,8 @@ object Element:
     private def showAtom: String = element match
       case _: (Concat | Alternation) => s"(${element.show})"
       case _ => element.show
+
+  extension (terminal: TerminalOrEoi)
+    def name: String = terminal match
+      case t: Terminal => t.name
+      case Eoi => "end of input"
