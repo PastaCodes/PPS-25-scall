@@ -28,7 +28,7 @@
             <td>3</td>
             <td>Lexical analysis</td>
             <td>15</td>
-            <td>?</td>
+            <td>17</td>
         </tr>
         <tr>
             <td>4</td>
@@ -46,7 +46,7 @@
             <td>6</td>
             <td>FINF language use case</td>
             <td>10</td>
-            <td>?</td>
+            <td>20</td>
         </tr>
         <tr>
             <th colspan="4">Optional features</th>
@@ -61,7 +61,7 @@
             <td>8</td>
             <td>CST to AST conversion constructs</td>
             <td>12</td>
-            <td>?</td>
+            <td>17</td>
         </tr>
         <tr>
             <td>9</td>
@@ -147,11 +147,29 @@
             <td>3</td><td>3</td><td>4</td><td>2</td><td>0</td>
         </tr>
         <tr>
-            <td>Lexical analysis</td>
-            <td>Implement lexer with the longest-prefix-match algorithm</td>
+            <td rowspan="4">Lexical analysis</td>
+            <td>Define Token ADT and Terminal regex matching</td>
             <td>JT</td>
-            <td>15</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>4</td>
+            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Implement LazyList.unfold state machine</td>
+            <td>JT</td>
+            <td>5</td>
+            <td>5</td><td>3</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Longest-prefix-match tie-breaking logic</td>
+            <td>JT</td>
+            <td>4</td>
+            <td>4</td><td>4</td><td>4</td><td>1</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Handle skipped terminals and lexical errors</td>
+            <td>JT</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>2</td><td>2</td><td>0</td>
         </tr>
         <tr>
             <td>FINF language use case</td>
@@ -214,11 +232,35 @@
             <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
         </tr>
         <tr>
-            <td>CST to AST conversion constructs</td>
-            <td>???</td>
+            <td rowspan="5">CST to AST conversion</td>
+            <td>Define CSTNode ADT</td>
             <td>JT</td>
-            <td>12</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>2</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Implement extractors for Rule and Leaf</td>
+            <td>JT</td>
+            <td>2</td>
+            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Define AstDecoder type class and monad operations</td>
+            <td>JT</td>
+            <td>3</td>
+            <td>3</td><td>3</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Implement sequence decoding and list aggregation</td>
+            <td>JT</td>
+            <td>4</td>
+            <td>4</td><td>4</td><td>4</td><td>2</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Define AstError ADT and fail-fast propagation</td>
+            <td>JT</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>2</td><td>2</td><td>0</td>
         </tr>
     </tbody>
 </table>
@@ -243,10 +285,10 @@
     <tbody>
         <tr>
             <td>Lexical analysis</td>
-            <td>Include line number and column in tokens</td>
+            <td>ADT Position & foldLeft tracking implementation</td>
             <td>JT</td>
             <td>2</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
         </tr>
         <tr>
             <td>Syntactical analysis</td>
@@ -256,11 +298,29 @@
             <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
         </tr>
         <tr>
-            <td>FINF language use case</td>
-            <td>Add converter from CST to AST for the FINF language</td>
+            <td rowspan="4">FINF language</td>
+            <td>Define FinfNode AST domain structures</td>
             <td>JT</td>
-            <td>10</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>2</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Implement TypedExtractors for FINF elements</td>
+            <td>JT</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Write decoder rules for expressions & declarations</td>
+            <td>JT</td>
+            <td>7</td>
+            <td>7</td><td>4</td><td>4</td><td>1</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Adapt decoder to resolve right-recursive LL(1) lists</td>
+            <td>JT</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>2</td><td>2</td><td>0</td>
         </tr>
         <tr>
             <td rowspan="2">Automatic left factoring</td>
