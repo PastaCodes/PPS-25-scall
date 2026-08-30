@@ -1,11 +1,6 @@
 package it.unibo.scall
 package ast
 
-enum AstError:
-  case DecodingError(message: String)
-  case UnexpectedNode(expected: String, actual: String)
-  case AggregateError(errors: Seq[AstError])
-
 /** A type class defining how to translate a generic [[CSTNode]] into a
  *  strongly-typed Abstract Syntax Tree (AST) node of type `A`.
  */

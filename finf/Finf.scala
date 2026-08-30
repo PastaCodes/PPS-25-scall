@@ -123,7 +123,3 @@ object Finf extends Grammar:
   val WHITESP = -> ("[\t \r\n]+".r, skip = true)
 
   val COMMENT = -> ("""/\*.*?\*/""".r, skip = true)
-
-@main
-def demo(args: String*): Unit =
-  ???
