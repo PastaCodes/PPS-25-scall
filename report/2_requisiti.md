@@ -93,6 +93,8 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 |    | Il sistema deve tracciare e associare a ogni token generato (sia esso valido o di errore) le coordinate spaziali esatte (numero di riga e numero di colonna) calcolate in base alla sua posizione nel testo originale.                                                                                       |
 |    | Il sistema deve fornire un meccanismo di decodifica per elaborare iterativamente un albero sintattico concreto (CST) estraendone gli elementi utili alla costruzione dell'albero astratto (AST).                                                                                                             |
 |    | In caso di incongruenze durante la decodifica CST-AST, il sistema deve propagare il fallimento arricchendo l'errore con le coordinate spaziali del nodo responsabile.                                                                                                                                        |
+|    | ...                                                                                                                                                                                                                                                                                                          |
+|    | Il caso d'uso FINF deve basarsi su una grammatica che metta in evidenza tutte le funzionalità principali della libreria.                                                                                                                                                                                     |
 
 // TODO: mettere gli id quando ci sono tutti
 
