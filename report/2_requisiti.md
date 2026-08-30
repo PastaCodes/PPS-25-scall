@@ -63,9 +63,11 @@ Sulla base di questi, viene definita la tabella di parsing come segue:
 
 ### Utente
 
-| ID | Testo del requisito |
-|----|---------------------|
-|    |                     |
+| ID | Testo del requisito                                                                                                                                                                                            |
+|----|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| U? | L'utilizzatore della libreria deve poter sottoporre al sistema una stringa di testo (codice sorgente) per avviare la pipeline di analisi lessicale e sintattica.                                               |
+|    | L'utilizzatore della libreria deve poter fornire al sistema un set di regole di decodifica personalizzate per trasformare i nodi dell'albero sintattico (CST) nei nodi del proprio Abstract Syntax Tree (AST). |
+|    | Tramite l'interfaccia a riga di comando (CLI), l'utente finale deve ricevere report diagnostici che indichino l'esatta riga e colonna in cui si è verificato un errore lessicale o sintattico.                 |
 
 ### Sistema
 
@@ -83,6 +85,14 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 |    | La conversione EBNF-CFG deve produrre una grammatica di classe LL(1) laddove la rappresentazione iniziale lo consenta, in riferimento a un processo che preservi la struttura interna e rispetti i vincoli posti.                                                                                            |
 |    | Il sistema deve consentire di rappresentare una tabella di parsing LL(1). Le celle devono essere identificate da un nonterminale e da un terminale, quest'ultimo possibilmente sostituito da un indicatore di esaurimento dell'input, e devono contenere un corpo di produzione.                             |
 |    | Il sistema deve fornire un meccanismo di costruzione di una tabella di parsing a partire da una grammatica in forma CFG pura, secondo le specifiche dell'algoritmo LL(1).                                                                                                                                    |
+| S? | Il sistema deve eseguire l'analisi lessicale convertendo una stringa di input in una sequenza di token, ciascuno associato a un simbolo terminale definito nella grammatica.                                                                                                                                 |
+|    | Durante l'analisi lessicale, il sistema deve risolvere le ambiguità applicando la regola del longest-prefix-match.                                                                                                                                                                                           |
+|    | A parità di lunghezza tra più match validi, il sistema deve risolvere il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica.                                                                                                                                        |
+|    | Il sistema deve consumare e scartare in modo silente le porzioni di input corrispondenti a terminali esplicitamente marcati come ignorabili (ad esempio spaziature o commenti).                                                                                                                              |
+|    | In presenza di caratteri non riconosciuti da alcuna regola lessicale, il sistema deve isolare il carattere invalido in un token di errore e proseguire l'analisi del resto dell'input senza interrompersi.                                                                                                   |
+|    | Il sistema deve tracciare e associare a ogni token generato (sia esso valido o di errore) le coordinate spaziali esatte (numero di riga e numero di colonna) calcolate in base alla sua posizione nel testo originale.                                                                                       |
+|    | Il sistema deve fornire un meccanismo di decodifica per elaborare iterativamente un albero sintattico concreto (CST) estraendone gli elementi utili alla costruzione dell'albero astratto (AST).                                                                                                             |
+|    | In caso di incongruenze durante la decodifica CST-AST, il sistema deve propagare il fallimento arricchendo l'errore con le coordinate spaziali del nodo responsabile.                                                                                                                                        |
 
 // TODO: mettere gli id quando ci sono tutti
 
