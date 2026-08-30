@@ -8,9 +8,9 @@ case class Program(declarations: Seq[Declaration], body: Expr) extends FinfNode
 sealed trait Declaration extends FinfNode
 case class RecordDecl(name: String, params: Seq[Parameter]) extends Declaration
 case class FunDecl(name: String, returnType: TypeRef, params: Seq[Parameter], localDecls: Seq[Declaration], body: Expr) extends Declaration
-case class ValDecl(name: String, tpe: TypeRef, value: Expr) extends Declaration
+case class ValDecl(name: String, typeRef: TypeRef, value: Expr) extends Declaration
 
-case class Parameter(name: String, tpe: TypeRef) extends FinfNode
+case class Parameter(name: String, typeRef: TypeRef) extends FinfNode
 
 sealed trait TypeRef extends FinfNode
 case object IntType extends TypeRef
