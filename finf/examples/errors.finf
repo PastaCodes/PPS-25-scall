@@ -1,0 +1,5 @@
+let
+  val x: int = ;
+  val y: int = 3;
+in
+  print(x @ y);

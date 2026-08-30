@@ -9,12 +9,6 @@ import lexer.Token
 import parser.ParsingTable.ParsingTable
 import parser.Parsing.*
 
-enum ParseError:
-  case UnexpectedToken(expected: Set[TerminalOrEoi], found: Token.Valid)
-  case UnexpectedEndOfInput(expected: Set[TerminalOrEoi])
-  case LexicalError(token: Token.Error)
-  case TrailingInput(token: Token)
-
 case class ParseReport(tree: CSTNode, errors: Seq[ParseError]):
   def isValid: Boolean = errors.isEmpty
 
@@ -103,8 +97,3 @@ class Parser(table: ParsingTable, startSymbol: Nonterminal):
 
   extension (next: Option[Token.Valid])
     private def terminal: TerminalOrEoi = next.map(_.terminal).getOrElse(Eoi)
-
-  extension (terminal: TerminalOrEoi)
-    private def name: String = terminal match
-      case t: Terminal => t.name
-      case Eoi => "end of input"
