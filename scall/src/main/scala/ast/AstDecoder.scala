@@ -6,6 +6,9 @@ enum AstError:
   case UnexpectedNode(expected: String, actual: String)
   case AggregateError(errors: Seq[AstError])
 
+/** A type class defining how to translate a generic [[CSTNode]] into a
+ *  strongly-typed Abstract Syntax Tree (AST) node of type `A`.
+ */
 trait AstDecoder[A]:
   self =>
   def decode(node: CSTNode): Either[AstError, A]
@@ -26,6 +29,9 @@ object AstDecoder:
 
   def fail[A](error: AstError): AstDecoder[A] = _ => Left(error)
 
+  /** Decodes a flat sequence of [[CSTNode]]s by repeatedly applying a partial function to extract chunks.
+   * Useful for resolving flat LL(1) sequences into typed AST collections.
+   */
   def decodeSequence[A](nodes: Seq[CSTNode])(extractChunk: PartialFunction[Seq[CSTNode], (Either[AstError, A], Seq[CSTNode])]): Either[AstError, Seq[A]] =
     if nodes.isEmpty then Right(Seq.empty)
     else extractChunk.lift(nodes) match
@@ -37,6 +43,7 @@ object AstDecoder:
       case None => Left(AstError.DecodingError("Invalid sequence structure"))
 
   extension (node: CSTNode)
+    /** Triggers the decoding of a [[CSTNode]] into type `A` using an available [[AstDecoder]] in scope. */
     def as[A](using decoder: AstDecoder[A]): Either[AstError, A] =
       decoder.decode(node)
 

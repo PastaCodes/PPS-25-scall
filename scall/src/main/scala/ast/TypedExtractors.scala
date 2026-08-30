@@ -4,6 +4,9 @@ package ast
 import grammar.Element.{Nonterminal, Terminal}
 import lexer.Token
 
+/** Provides type-safe extractors to perform pattern matching directly against
+ *  grammar [[Nonterminal]]s and [[Terminal]]s, abstracting away the underlying [[CSTNode]] boilerplate.
+ */
 object TypedExtractors:
 
   extension (symbol: Nonterminal)
