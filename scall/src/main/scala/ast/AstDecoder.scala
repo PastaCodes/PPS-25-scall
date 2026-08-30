@@ -26,17 +26,15 @@ object AstDecoder:
 
   def fail[A](error: AstError): AstDecoder[A] = _ => Left(error)
 
-  def decodeRightRecursiveList[A](node: CSTNode)(extractElement: PartialFunction[Seq[CSTNode], (Either[AstError, A], CSTNode)]): Either[AstError, Seq[A]] = node match
-    case CSTNode.RuleNode(_, children) =>
-      if children.isEmpty then Right(Seq.empty)
-      else extractElement.lift(children) match
-        case Some((decodedElement, remainingNodes)) =>
-          for
-            element <- decodedElement
-            decodedRest <- decodeRightRecursiveList(remainingNodes)(extractElement)
-          yield element +: decodedRest
-        case None => Left(AstError.DecodingError("Invalid list structure"))
-    case _ => Left(AstError.UnexpectedNode("List rule", node.toString))
+  def decodeSequence[A](nodes: Seq[CSTNode])(extractChunk: PartialFunction[Seq[CSTNode], (Either[AstError, A], Seq[CSTNode])]): Either[AstError, Seq[A]] =
+    if nodes.isEmpty then Right(Seq.empty)
+    else extractChunk.lift(nodes) match
+      case Some((decodedElement, remainingNodes)) =>
+        for
+          element <- decodedElement
+          decodedRest <- decodeSequence(remainingNodes)(extractChunk)
+        yield element +: decodedRest
+      case None => Left(AstError.DecodingError("Invalid sequence structure"))
 
   extension (node: CSTNode)
     def as[A](using decoder: AstDecoder[A]): Either[AstError, A] =
