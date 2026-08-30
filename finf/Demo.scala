@@ -2,12 +2,10 @@ package it.unibo.finf
 
 import ast.{FinfDecoder, Program}
 
-import it.unibo.scall.ast.{AstDecoder, AstError}
+import it.unibo.scall.ast.AstDecoder
 import AstDecoder.as
-import it.unibo.scall.ast.AstError.DecodingError
 import it.unibo.scall.grammar.ProcessedGrammar
 import it.unibo.scall.lexer.Lexer
-import it.unibo.scall.parser.ParseError.{LexicalError, TrailingInput}
 import it.unibo.scall.parser.{ParseError, ParseReport, Parser, ParsingTable}
 
 import scala.io.Source
@@ -48,24 +46,14 @@ private class FinfCompiler:
     import FinfDecoder.given
     outcome.tree.as[Program] match
       case Right(ast) => println(render(ast, " "))
-      case Left(error) => println(s" the tree is valid, but the AST decoder failed: ${summarise(error)}")
+      case Left(error) => println(s" the tree is valid, but the AST decoder failed: ${error.show}")
 
 private object FinfCompiler:
 
   private def describe(error: ParseError, lines: Seq[String]): String =
-    val (where, what) = error match
-      case ParseError.UnexpectedToken(expected, found) =>
-        (Some(found.position), s"unexpected '${found.lexeme}', expected ${listing(expected)}")
-      case ParseError.UnexpectedEndOfInput(expected) =>
-        (None, s"unexpected end of input, expected ${listing(expected)}")
-      case ParseError.LexicalError(token) =>
-        (Some(token.position), s"'${token.lexeme}' is not a valid character")
-      case ParseError.TrailingInput(token) =>
-        (Some(token.position), s"unexpected '${token.lexeme}' after the end of the program")
-
-    where match
-      case Some(position) => s"  $position  $what\n${excerpt(position.line, position.column, lines)}"
-      case None => s"  at the end of the file  $what"
+    error.position match
+      case Some(p) => s"  $p  ${error.show}\n${excerpt(p.line, p.column, lines)}"
+      case None => s"  at the end of the file  ${error.show}"
 
   private def excerpt(line: Int, column: Int, lines: Seq[String]): String =
     lines.lift(line - 1).fold("") { text =>
@@ -73,16 +61,6 @@ private object FinfCompiler:
       val gutter = " " * number.length
       s"     $number | $text\n     $gutter | ${" " * (column - 1)}^"
     }
-
-  private def listing(expected: Seq[String], shown: Int = 3): String =
-    val extra = expected.size - shown
-    if extra > 0 then s"${expected.take(shown).mkString(", ")} and $extra more"
-    else expected.mkString(", ")
-
-  private def summarise(error: AstError): String = error match
-    case AstError.DecodingError(message) => message
-    case AstError.UnexpectedNode(expected, _) => s"unexpected node where $expected was expected"
-    case AstError.AggregateError(errors) => errors.map(summarise).mkString("; ")
 
   private def render(value: Any, indent: String): String = value match
     case values: Seq[?] => values.map(render(_, indent)).mkString
