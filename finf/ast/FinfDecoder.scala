@@ -3,8 +3,8 @@ package ast
 
 import it.unibo.scall.ast.{AstDecoder, AstError, CSTNode}
 import it.unibo.scall.ast.TypedExtractors.*
+import it.unibo.scall.ast.Extractors.*
 import AstDecoder.*
-import AstDecoder.decodeRightRecursiveList
 import Finf.*
 
 object FinfDecoder:
@@ -18,28 +18,26 @@ object FinfDecoder:
       case _ => Left(AstError.UnexpectedNode("typeRef", node.toString))
 
   given paramListDecoder: AstDecoder[Seq[Parameter]] with
-    def decode(node: CSTNode): Either[AstError, Seq[Parameter]] = decodeRightRecursiveList(node):
-      /* ID ':' typeRef */
-      case Seq(ID(paramName), COLON(_), typeNode, remainingNodes) =>
-        (typeNode.as[TypeRef].map(Parameter(paramName, _)), remainingNodes)
-      /* ',' ID ':' typeRef */
-      case Seq(COMMA(_), ID(paramName), COLON(_), typeNode, remainingNodes) =>
-        (typeNode.as[TypeRef].map(Parameter(paramName, _)), remainingNodes)
+    def decode(node: CSTNode): Either[AstError, Seq[Parameter]] = node match
+      case RuleSeq(n, children*) if n == parameterList.name =>
+        AstDecoder.decodeSequence(children):
+          /* ID ':' typeRef ',' ... */
+          case Seq(ID(paramName), COLON(_), typeNode, COMMA(_), rest*) =>
+            (typeNode.as[TypeRef].map(Parameter(paramName, _)), rest)
+          /* ID ':' typeRef */
+          case Seq(ID(paramName), COLON(_), typeNode) =>
+            (typeNode.as[TypeRef].map(Parameter(paramName, _)), Seq.empty)
+      case _ => Left(AstError.UnexpectedNode("parameterList", node.toString))
 
   given argListDecoder: AstDecoder[Seq[Expr]] with
-    def decode(node: CSTNode): Either[AstError, Seq[Expr]] = decodeRightRecursiveList(node):
-      /* expression */
-      case Seq(exprNode, remainingNodes) =>
-        (exprNode.as[Expr], remainingNodes)
-      /* ',' expression */
-      case Seq(COMMA(_), exprNode, remainingNodes) =>
-        (exprNode.as[Expr], remainingNodes)
-
-  given declListDecoder: AstDecoder[Seq[Declaration]] with
-    def decode(node: CSTNode): Either[AstError, Seq[Declaration]] = decodeRightRecursiveList(node):
-      /* declaration */
-      case Seq(declNode, remainingNodes) =>
-        (declNode.as[Declaration], remainingNodes)
+    def decode(node: CSTNode): Either[AstError, Seq[Expr]] = node match
+      case RuleSeq(n, children*) if n == argumentList.name =>
+        AstDecoder.decodeSequence(children):
+          /* expression ',' ... */
+          case Seq(exprNode, COMMA(_), rest*) => (exprNode.as[Expr], rest)
+          /* expression */
+          case Seq(exprNode) => (exprNode.as[Expr], Seq.empty)
+      case _ => Left(AstError.UnexpectedNode("argumentList", node.toString))
 
   given exprDecoder: AstDecoder[Expr] with
     def decode(node: CSTNode): Either[AstError, Expr] = node match
@@ -118,10 +116,11 @@ object FinfDecoder:
               yield (nameStr, decodedType, decodedParams)
             case _ => Left(AstError.DecodingError("Invalid function signature"))
           (localDecls, bodyExpr) <- bodyNode match
-            /* let commonDeclaration* in expression ';' */
-            case functionBody(LET(_), declsNode, IN(_), exprNode, SEMI(_)) =>
+            case RuleSeq(n, LET(_), rest*) if n == functionBody.name =>
+              val declsNodes = rest.dropRight(3) // drops the last 3 (IN, expr, SEMI)
+              val exprNode   = rest(rest.length - 2) // expr is the second-last element
               for
-                declarations <- declsNode.as[Seq[Declaration]]
+                declarations <- declsNodes.decodeAll[Declaration]
                 expression   <- exprNode.as[Expr]
               yield (declarations, expression)
             /* expression ';' */
@@ -133,10 +132,11 @@ object FinfDecoder:
 
   given programDecoder: AstDecoder[Program] with
     def decode(node: CSTNode): Either[AstError, Program] = node match
-      /* let topDeclaration* in expression ';' */
-      case program(LET(_), declsNode, IN(_), exprNode, SEMI(_)) =>
+      case RuleSeq(n, LET(_), rest*) if n == program.name =>
+        val declsNodes = rest.dropRight(3) // drops the last 3 (IN, expr, SEMI)
+        val exprNode   = rest(rest.length - 2) // expr is the second-last element
         for
-          declarations   <- declsNode.as[Seq[Declaration]]
+          declarations   <- declsNodes.decodeAll[Declaration]
           mainExpression <- exprNode.as[Expr]
         yield Program(declarations, mainExpression)
       /* expression ';' */

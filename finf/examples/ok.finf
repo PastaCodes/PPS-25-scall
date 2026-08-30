@@ -1,0 +1,6 @@
+let
+  val greeting: int = 42;
+  fun double: int (n: int)
+    n * 2;
+in
+  print(double(greeting));

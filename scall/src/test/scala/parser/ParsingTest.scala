@@ -14,8 +14,8 @@ class ParsingTest extends AnyFunSuite:
   val token: Token.Valid = Token.Valid(a, "a", Position(1, 1))
   val input: LazyList[Token] = LazyList(token, token)
 
-  val anError: ParseError = ParseError.UnexpectedEndOfInput(Seq("a"))
-  val anotherError: ParseError = ParseError.UnexpectedToken(Seq("a"), token)
+  val anError: ParseError = ParseError.UnexpectedEndOfInput(Set(a))
+  val anotherError: ParseError = ParseError.UnexpectedToken(Set(a), token)
 
   test("pure produces a value, consuming no input and reporting no error"):
     val step = pure(42).run(input)

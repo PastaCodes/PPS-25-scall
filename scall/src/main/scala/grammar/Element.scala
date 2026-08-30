@@ -14,7 +14,10 @@ enum Element:
   case OneOrMore(inner: Element)
 
 object Element:
+  case object Eoi // end of input
+
   type Symbol = Terminal | Nonterminal
+  type TerminalOrEoi = Terminal | Eoi.type
   
   extension (element: Element)
     def ++(other: Element): Concat = Concat(element, other)
@@ -40,3 +43,8 @@ object Element:
     private def showAtom: String = element match
       case _: (Concat | Alternation) => s"(${element.show})"
       case _ => element.show
+
+  extension (terminal: TerminalOrEoi)
+    def name: String = terminal match
+      case t: Terminal => t.name
+      case Eoi => "end of input"

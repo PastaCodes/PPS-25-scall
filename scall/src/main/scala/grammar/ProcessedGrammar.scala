@@ -5,13 +5,24 @@ import Element.*
 import ProcessedGrammar.*
 import util.CollectionUtils.*
 
+/** Representation of a Context-Free Grammar (CFG), which is defined by
+ *  a start symbol, a collection of declared terminals, and a collection of declared productions.
+ *  This form is better suited for the LL(1) algorithm and is obtained by a process of conversion
+ *  from an [[Grammar EBNF grammar]] as described in [[ProcessedGrammar.of]].
+ */
 case class ProcessedGrammar(startSymbol: Nonterminal,
                             terminals: Seq[Terminal],
                             productions: Productions)
 
 object ProcessedGrammar:
 
+  /** A nonterminal which is not derived from the input grammar directly, rather it is added
+   *  to the final grammar as a means to implement non-trivial features of the input grammar.
+   *  Specifically, it can be the result of a repetition operator ([[Element.`*` *]] or [[Element.+ +]])
+   *  or of the process of left factoring. See [[ProcessedGrammar.of]] for further details.
+   */
   case class InternalNonterminal(name: String)
+
   type AnyNonterminal = Nonterminal | InternalNonterminal
   type AnySymbol = Terminal | AnyNonterminal
   type SymbolSeq = Seq[AnySymbol]
@@ -21,7 +32,12 @@ object ProcessedGrammar:
   case class VisitResult(alternatives: Alternatives,
                          nonterminals: Set[Nonterminal] = Set.empty,
                          productions: Productions = Map.empty)
-  
+
+  /** Performs a recursive traversal of the tree-like EBNF grammar and converts it
+   *  to a CFG grammar. Each kind of [[Element production element]] is handled differently
+   *  and may generate productions for the final grammar. Each scenario is described in the test classes
+   *  (`ProcessedGrammarAlternativesTest` and `ProcessedGrammarProductionsTest`).
+   */
   def of(g: Grammar, startSymbol: Nonterminal): ProcessedGrammar =
     val res = visit(startSymbol)
     ProcessedGrammar(startSymbol, g.terminals, res.productions)
