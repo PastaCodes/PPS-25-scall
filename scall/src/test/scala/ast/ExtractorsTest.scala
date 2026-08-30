@@ -5,7 +5,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.Inside.inside
 import grammar.Element.{Eps, Nonterminal, Terminal}
-import grammar.ProcessedGrammar.InternalNonterminal
 import lexer.{Position, Token}
 import ast.Extractors.*
 
@@ -13,7 +12,6 @@ class ExtractorsTest extends AnyFunSuite:
 
   private val leafNode = CSTNode.LeafNode(Token.Valid(Terminal("ID", "[a-z]+".r), "myVar", Position(1, 1)))
   private val ruleNode = CSTNode.RuleNode(Nonterminal("statement", () => Eps), Seq(leafNode))
-  // private val internalRuleNode = CSTNode.RuleNode(InternalNonterminal("statement*"), Seq.empty)
 
   test("Leaf extractor extracts lexemes from token leaves"):
     inside(leafNode):
@@ -23,10 +21,6 @@ class ExtractorsTest extends AnyFunSuite:
     inside(ruleNode):
       case Rule("statement", children) =>
         children shouldBe Seq(leafNode)
-
-//  test("Rule extractor extracts rule names from internal non-terminals"):
-//    inside(internalRuleNode):
-//      case Rule("statement*", children) => children shouldBe empty
 
   test("RuleSeq extractor deconstructs CST children positionally"):
     val binaryNode = CSTNode.RuleNode(Nonterminal("binary", () => Eps), Seq(leafNode, leafNode, leafNode))

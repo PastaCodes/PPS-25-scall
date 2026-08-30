@@ -3,7 +3,6 @@ package ast
 
 import grammar.Element.{Eps, Nonterminal, Terminal}
 import ast.CSTNode.{LeafNode, RuleNode}
-import grammar.ProcessedGrammar.InternalNonterminal
 import lexer.{Position, Token}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
