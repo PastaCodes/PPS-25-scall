@@ -37,7 +37,7 @@ object ParsingTable:
     registerScope:
       withKnowledge(grammarKnowledge): () =>
         val X = variable("X"); val A = variable("A"); val B = variable("B")
-        val parsingTableGoal = compoundTerm("parsing_cell", X, A, B)
+        val parsingTableGoal = compoundTerm("parsing_table_cell", X, A, B)
         parsingTableGoal.solveAll.collectSuccess { s => (
           (
             s.getRegistered[AnyNonterminal](X),

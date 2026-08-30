@@ -34,5 +34,5 @@ follow(X, A) :- following(X, S, H), H \== X, first_str(S, 0), follow(H, A).
 % relates a position within the parsing table, given by a nonterminal along with a terminal
 % (possibly end of input), with the value in that cell, being a production body
 % assuming the starting grammar is LL(1), each cell will have only one possible value
-parsing_cell(X, A, B) :- production(X, B), first_str(B, A), A \== 0.
-parsing_cell(X, A, B) :- production(X, B), first_str(B, 0), follow(X, A).
+parsing_table_cell(X, A, B) :- production(X, B), first_str(B, A), A \== 0.
+parsing_table_cell(X, A, B) :- production(X, B), first_str(B, 0), follow(X, A).

@@ -82,7 +82,7 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 |    | La conversione EBNF-CFG deve produrre una grammatica fattorizzata a sinistra (_left-factored_).                                                                                                                                                                                                              |
 |    | La conversione EBNF-CFG deve produrre una grammatica di classe LL(1) laddove la rappresentazione iniziale lo consenta, in riferimento a un processo che preservi la struttura interna e rispetti i vincoli posti.                                                                                            |
 |    | Il sistema deve consentire di rappresentare una tabella di parsing LL(1). Le celle devono essere identificate da un nonterminale e da un terminale, quest'ultimo possibilmente sostituito da un indicatore di esaurimento dell'input, e devono contenere un corpo di produzione.                             |
-|    | Il sistema deve fornire un meccanismo di costruzione di una tabella di parsing a partire da una grammatica in forma CFG pura, secondo le specifiche dell'algoritmo LL(1).                                                                                                                                    |
+|    | Il sistema deve fornire un meccanismo di costruzione di una tabella di parsing a partire da una grammatica in forma CFG pura, secondo le specifiche dell'algoritmo LL(1). Nel caso di una grammatica non LL(1) il comportamento non è definito.                                                              |
 
 // TODO: mettere gli id quando ci sono tutti
 
