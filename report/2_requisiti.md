@@ -2,6 +2,8 @@
 
 ## Requisiti di business
 
+Vengono inclusi aspetti che rendono il progetto strategico sia in qualità di elaborato soggetto a valutazione, sia in qualità di prodotto utilizzabile da terzi.
+
 | ID | Testo del requisito                                                                                                                                                                           | Criterio di accettazione                                                                                                   |
 |----|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
 | B1 | Il sistema deve migliorare l'esperienza dell'utilizzatore nello sviluppo del frontend di un compilatore, richiedendo di implementare unicamente gli aspetti specifici del proprio linguaggio. | Il caso d'uso FINF non presenta dettagli implementativi di analisi lessicale e semantica.                                  |
@@ -25,11 +27,12 @@
 * Una grammatica libera dal contesto, o CFG, raccoglie un insieme di terminali e nonterminali che definiscono un linguaggio libero dal contesto.
   In forma "pura" ogni nonterminale è definito da un insieme di produzioni, dove ciascuna ha un corpo costituito da una semplice sequenza di simboli.
   In forma estesa di Backus-Naur, o EBNF, ogni nonterminale è definito da una singola regola, che però consente l'uso di operatori aggiuntivi, ad esempio di ripetizione.
+* Una CFG (pura) si dice fattorizzata a sinistra (_left-factored_) quando è priva di produzioni che abbiano la stessa testa e corpi che condividono un prefisso comune.
 * Un lessema rappresenta una porzione significativa di una stringa di caratteri in input.
 * Un token associa ad un lessema un simbolo terminale della grammatica. 
 * Un lexer, o analizzatore lessicale, trasforma una stringa di caratteri in uno stream di token.
 * Un albero sintattico concreto, o CST, rappresenta la struttura sintattica di una stringa di input secondo le regole di una grammatica.
-* Un parser, o analizzatore sintattico, trasforma uno stream di token in un CST. Un parser LL(1) sfrutta assunzioni sul tipo di linguaggio, risultando in un algoritmo più semplice.
+* Un parser, o analizzatore sintattico, trasforma uno stream di token in un CST. Un parser LL(1) sfrutta assunzioni sul tipo di linguaggio, risultando in un algoritmo più semplice e performante.
 * Una tabella di parsing è una struttura a supporto dell'algoritmo di parsing LL(1) che ne determina il comportamento in base allo stato attuale. 
 * Un albero sintattico astratto, o AST, è una rielaborazione della struttura sintattica incentrata sui contenuti di rilevanza semantica.
 
@@ -41,12 +44,47 @@ la definizione della grammatica, la stringa di input da analizzare e le regole d
 Successivamente viene costruito il lexer e l'EBNF viene convertita in CFG pura, permettendo la generazione della parsing table necessaria per istanziare il parser.
 In seguito a questa fase di costruzione inizia l'analisi lessicale, con il lexer che processa la stringa di input restituendo uno stream di token, preso a sua volta in input dal parser che, seguendo la parsing table, esegue l'analisi sintattica. La struttura viene validata andando a generare l'albero CST, il quale viene decodificato dal convertitore definito dall'utilizzatore che restituisce come output l'AST.
 
+### Algoritmo LL(1)
+
+L'algoritmo di parsing LL(1) richiede il calcolo dei FIRST set e FOLLOW set, definiti come segue:
+
+* $\mathrm{FIRST}(X) = \lbrace\, b \;|\; X \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \;|\; X \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X$ è un simbolo della grammatica.
+* $\mathrm{FIRST}(X_1X_2\!\cdots\!X_n) = \lbrace\, b \;|\; X_1X_2\!\cdots\!X_n \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \;|\; X_1X_2\!\cdots\!X_n \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X_1X_2\!\cdots\!X_n$ è una stringa di simboli.
+* $\mathrm{FOLLOW}(X) = \lbrace\, b \;|\; S\,\$ \Rightarrow^* \beta\,X\,b\,\delta \,\rbrace$&ensp;dove $S$ è il simbolo iniziale della grammatica.
+
+Sulla base di questi, viene definita la tabella di parsing come segue:
+
+* Se la grammatica contiene la produzione&ensp;$A\rightarrow\alpha$&ensp;e&ensp;$b\in\mathrm{FIRST}(\alpha)$&ensp;allora&ensp;$\mathrm{T}\lbrack A, b \rbrack = \alpha$.
+* Se la grammatica contiene la produzione&ensp;$A\rightarrow\alpha$&ensp;e&ensp;$\varepsilon\in\mathrm{FIRST}(\alpha)$&ensp;e&ensp;$b\in\mathrm{FOLLOW}(A)$ allora $\mathrm{T}\lbrack A, b \rbrack = \alpha$.
+
+// TODO: resto dell'algoritmo
 
 ## Requisiti funzionali
 
 ### Utente
 
+| ID | Testo del requisito |
+|----|---------------------|
+|    |                     |
+
 ### Sistema
+
+Vengono inclusi vincoli che nel contesto di una libreria di parsing generica costituirebbero decisioni di design. Il progetto ScaLL si basa sull'algoritmo LL(1) come premessa di dominio, dunque prevede alcuni elementi necessari sotto forma di requisiti funzionali di sistema. 
+
+| ID | Testo del requisito                                                                                                                                                                                                                                                                                          |
+|----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    | // TODO: quando si descrive la grammatica definita dall'utilizzatore, ricordarsi di citare che l'ordine in cui sono definiti i terminali ne detta la priorità                                                                                                                                                |
+|    | Il sistema deve consentire di rappresentare una CFG pura, caratterizzata da un simbolo (nonterminale) di partenza, una collezione di terminali e una collezione di produzioni, ossia associazioni fra nonterminali e sequenze di simboli. Uno stesso nonterminale può costituire la testa di più produzioni. |
+|    | Il sistema deve fornire un meccanismo di conversione da una grammatica in EBNF a una CFG pura, una volta specificato il simbolo di partenza.                                                                                                                                                                 |
+|    | La conversione EBNF-CFG deve mantenere invariata la collezione di terminali dichiarati, priorità incluse.                                                                                                                                                                                                    |
+|    | La conversione EBNF-CFG deve preservare tutti i nonterminali dichiarati, eventualmente aggiungendone di nuovi, limitatamente ai casi in cui siano necessari per rappresentare internamente occorrenze di meccanismi non banali.                                                                              |
+|    | La conversione EBNF-CFG deve produrre una grammatica equivalente, cioè che generi lo stesso linguaggio.                                                                                                                                                                                                      |
+|    | La conversione EBNF-CFG deve produrre una grammatica fattorizzata a sinistra (_left-factored_).                                                                                                                                                                                                              |
+|    | La conversione EBNF-CFG deve produrre una grammatica di classe LL(1) laddove la rappresentazione iniziale lo consenta, in riferimento a un processo che preservi la struttura interna e rispetti i vincoli posti.                                                                                            |
+|    | Il sistema deve consentire di rappresentare una tabella di parsing LL(1). Le celle devono essere identificate da un nonterminale e da un terminale, quest'ultimo possibilmente sostituito da un indicatore di esaurimento dell'input, e devono contenere un corpo di produzione.                             |
+|    | Il sistema deve fornire un meccanismo di costruzione di una tabella di parsing a partire da una grammatica in forma CFG pura, secondo le specifiche dell'algoritmo LL(1).                                                                                                                                    |
+
+// TODO: mettere gli id quando ci sono tutti
 
 ## Requisiti non funzionali
 
