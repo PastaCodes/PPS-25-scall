@@ -91,18 +91,21 @@ pertanto si prevede che in fase di implementazione emerga la necessità di uno s
 
 ## Analizzatore Lessicale (Lexer)
 
-L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale.
-Il suo scopo è la conversione della stringa di input in una sequenza di token,
-ciascuno associato a un simbolo terminale, mantenendo traccia delle coordinate spaziali
+L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale. 
+Il suo scopo è la conversione della stringa di input in una sequenza di token, 
+ciascuno associato a un simbolo terminale, mantenendo traccia delle coordinate spaziali 
 calcolate in base alla posizione nel testo originale.
+
 Le principali scelte di design sono ricadute su:
-* **Immutabilità e ADT**: Il tracciamento spaziale è delegato a un modulo Position modellato come tipo immutabile.
-  Ogni token generato detiene una referenza a una precisa istanza di Position,
-  garantendo l'assenza di side-effect durante le successive fasi di analisi.
-* **Gestione funzionale degli errori**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi,
-  il design esclude il lancio di eccezioni in fase lessicale.
-  Viene adottato un approccio polimorfico: i caratteri non validi vengono isolati in un costrutto specifico ErrorToken,
-  permettendo al lexer di incapsulare il fallimento e proseguire l'analisi del resto dell'input.
+
+* **Immutabilità e incapsulamento dello stato (Cursor)**: Per supportare l'iterazione sull'input mantenendo l'assenza di side-effect, 
+  il tracciamento spaziale (offset, riga, colonna) è incapsulato in un'entità privata Cursor. 
+  Ad ogni match, il lexer non muta puntatori globali, ma genera una nuova istanza di Cursor tramite il metodo `advance`, garantendo la purezza funzionale dell'avanzamento.
+
+* **Gestione funzionale degli errori e ADT**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi, 
+  il design esclude il lancio di eccezioni in fase lessicale. 
+  Il tipo di ritorno è modellato come enum type `Token`, permettendo di istanziare ValidToken per i match corretti o di isolare il carattere invalido in uno specifico ErrorToken, 
+  incapsulando il fallimento per consentire l'analisi del resto dell'input.
 
 ![](images/lexer_class_diagram.svg)
 
@@ -127,3 +130,20 @@ Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategi
 
 
 ## Decodifica CST-AST
+
+Il sistema deve fornire un meccanismo di decodifica per elaborare iterativamente l'albero sintattico concreto (CST), dipendente dalla struttura della grammatica,
+estraendone gli elementi utili alla costruzione dell'albero astratto (AST) specifico per il dominio dell'utilizzatore.
+
+### Strategia di astrazione e pattern matching
+
+A livello di design, CST e AST sono entità strutturalmente disaccoppiate. 
+Il CST è un albero $n$-ario i cui nodi interni rappresentano le produzioni e le cui foglie rappresentano i token. 
+Per evitare all'utilizzatore l'onere di navigare manualmente questa struttura algoritmica tramite indici o puntatori, 
+il design introduce il pattern degli Extractor Objects tipizzati.
+
+Attraverso gli estrattori, la complessità dell'albero viene mascherata: 
+l'utilizzatore definisce regole di decodifica dichiarative basate sul pattern matching.
+Quando un nodo CST associato a una specifica produzione (es. $E \rightarrow E + T$) viene processato, 
+l'estrattore lo decostruisce nei suoi sotto-nodi costituenti. 
+Se la decostruzione ha successo, vengono invocate ricorsivamente le regole di decodifica sui figli, 
+e i risultati vengono infine composti nel nodo AST corrispondente stabilito dall'utente.
