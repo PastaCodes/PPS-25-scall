@@ -42,11 +42,11 @@ let
         else {
           append(
             quicksort( filter(l.rest, pivot, true) ),
-            new List(  pivot, quicksort( filter(l.rest, pivor, false) )  )
+            new List(  pivot, quicksort( filter(l.rest, pivot, false) )  )
           )
         };
 
   val l:List = new List(2, new List(1, new List(4, new List(3, new List(2, new List(5, null))))));
 
 in
-  printlist(quicksort(l));
+  printList(quicksort(l));
