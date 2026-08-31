@@ -102,3 +102,4 @@ class AstDecoderTest extends AnyFunSuite:
   test("decodeAll builds the complete collection when all nodes are valid"):
     val nodes = Seq(leaf("1", "NUM"), leaf("2", "NUM"))
     nodes.decodeAll[IntLiteral] shouldBe Right(Seq(IntLiteral(1), IntLiteral(2)))
+    
