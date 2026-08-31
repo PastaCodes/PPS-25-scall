@@ -104,4 +104,7 @@ Durante una singola richiesta, l'engine, creato inizialmente con la sola teoria 
 Viene sfruttata la funzionalità di registrazione degli oggetti, così che i risultati vengano riportati direttamente in termini di istanze ricevute in ingresso.
 Le soluzioni prodotte dall'engine vengono raccolte per popolare la tabella da restituire.
 
+La libreria utilizzata per interfacciarsi con l'engine è caratterizzata da uno stile object-oriented e un ampio uso di stato mutabile,
+pertanto si prevede che in fase di implementazione emerga la necessità di uno strato intermedio che fornisca maggiore robustezza e consenta di mantenere uno stile idiomatico. 
+
 ## Decodifica CST-AST
