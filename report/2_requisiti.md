@@ -57,15 +57,34 @@ Sulla base di questi, viene definita la tabella di parsing come segue:
 * Se la grammatica contiene la produzione&ensp;$A\rightarrow\alpha$&ensp;e&ensp;$b\in\mathrm{FIRST}(\alpha)$&ensp;allora&ensp;$\mathrm{T}\lbrack A, b \rbrack = \alpha$.
 * Se la grammatica contiene la produzione&ensp;$A\rightarrow\alpha$&ensp;e&ensp;$\varepsilon\in\mathrm{FIRST}(\alpha)$&ensp;e&ensp;$b\in\mathrm{FOLLOW}(A)$ allora $\mathrm{T}\lbrack A, b \rbrack = \alpha$.
 
-// TODO: resto dell'algoritmo
+La grammatica appartiene alla classe LL(1) se ogni cella così definita contiene al massimo un corpo di produzione, 
+ovvero se per ogni coppia di produzioni distinte&ensp;$A\rightarrow\alpha$&ensp;e&ensp;$A\rightarrow\beta$:
+* $\mathrm{FIRST}(\alpha)\cap\mathrm{FIRST}(\beta)=\emptyset$.
+* al massimo una fra $\alpha$ e $\beta$ deriva $\varepsilon$.
+* se&ensp;$\beta\Rightarrow^*\varepsilon$&ensp;allora&ensp;$\mathrm{FIRST}(\alpha)\cap\mathrm{FOLLOW}(A)=\emptyset$.
+
+Data la tabella l'analisi procede per configurazioni&ensp;$(\gamma,\,u)$,&ensp;dove $\gamma$ è la sequenza di simboli ancora da riconoscere 
+e $u$ l'input non ancora consumato, a partire da&ensp;$(S\,\$,\;w\,\$)$&ensp;e fino all'accettazione in&ensp;$(\$,\;\$)$:
+
+* $(b\,\gamma,\;b\,u)\;\vdash\;(\gamma,\;u)$&ensp;riconoscimento di un terminale, cui corrisponde una foglia del CST.
+* $(A\,\gamma,\;b\,u)\;\vdash\;(\alpha\,\gamma,\;b\,u)$&ensp;se&ensp;$\mathrm{T}\lbrack A,b\rbrack=\alpha$,&ensp;espansione di un nonterminale, cui corrisponde un nodo del CST etichettato $A$ avente per figli i sottoalberi di $\alpha$. I nonterminali introdotti dalla conversione EBNF-CFG non compaiono nell'albero: i loro nodi sono sostituiti dalla sequenza dei propri figli.
+
+In assenza di una transizione applicabile l'input non appartiene al linguaggio. L'analisi non si interrompe: l'errore viene registrato e i token vengono scartati fino a incontrarne uno che permetta di
+riprendere, ossia appartenente all'insieme di sincronizzazione del simbolo corrente, dato dai terminali che possono iniziarlo uniti a quelli che possono seguirlo nel contesto in cui è stato espanso.
 
 ## Requisiti funzionali
 
 ### Utente
 
-| ID | Testo del requisito |
-|----|---------------------|
-|    |                     |
+| ID | Testo del requisito                                                                                                                                                                                                                          |
+|----|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|    | L'utilizzatore deve poter definire una grammatica in forma EBNF, dichiarando terminali e nonterminali e componendoli con gli operatori di concatenazione, alternativa, opzionalità e ripetizione, per zero o più e per una o più occorrenze. |
+|    | L'utilizzatore deve poter definire un terminale tramite il lessema esatto o un'espressione regolare, ed eventualmente dichiararlo da ignorare ai fini dell'analisi sintattica.                                                               |
+|    | L'utilizzatore deve poter definire un nonterminale facendo riferimento a nonterminali dichiarati successivamente o al nonterminale stesso, senza vincoli sull'ordine di dichiarazione.                                                       |
+|    | L'utilizzatore non deve dover nominare esplicitamente i simboli: ogni terminale o nonterminale assume il nome della definizione che lo introduce.                                                                                            |
+|    | L'utilizzatore deve poter ottenere un parser da una tabella di parsing e un simbolo iniziale, e da esso il CST di uno stream di token.                                                                                                       |
+|    | L'utilizzatore deve ricevere l'elenco completo degli errori riscontrati in una singola analisi, e non solo il primo, ciascuno corredato della posizione nel sorgente e dei terminali che sarebbero stati ammissibili                         |
+|    | Il CST restituito deve contenere unicamente i nonterminali dichiarati dall'utilizzatore.                                                                                                                                                     |
 
 ### Sistema
 
@@ -73,7 +92,8 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 
 | ID | Testo del requisito                                                                                                                                                                                                                                                                                          |
 |----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|    | // TODO: quando si descrive la grammatica definita dall'utilizzatore, ricordarsi di citare che l'ordine in cui sono definiti i terminali ne detta la priorità                                                                                                                                                |
+|    | Il sistema deve rappresentare gli elementi di una grammatica EBNF in forma ricorsiva, valutando la regola che definisce un nonterminale al momento in cui la grammatica viene percorsa e non all'atto della definizione.                                                                                     |
+|    | Il sistema deve preservare l'ordine di dichiarazione dei terminali, che ne determina la priorità.                                                                                                                                                                                                            |
 |    | Il sistema deve consentire di rappresentare una CFG pura, caratterizzata da un simbolo (nonterminale) di partenza, una collezione di terminali e una collezione di produzioni, ossia associazioni fra nonterminali e sequenze di simboli. Uno stesso nonterminale può costituire la testa di più produzioni. |
 |    | Il sistema deve fornire un meccanismo di conversione da una grammatica in EBNF a una CFG pura, una volta specificato il simbolo di partenza.                                                                                                                                                                 |
 |    | La conversione EBNF-CFG deve mantenere invariata la collezione di terminali dichiarati, priorità incluse.                                                                                                                                                                                                    |
@@ -83,7 +103,12 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 |    | La conversione EBNF-CFG deve produrre una grammatica di classe LL(1) laddove la rappresentazione iniziale lo consenta, in riferimento a un processo che preservi la struttura interna e rispetti i vincoli posti.                                                                                            |
 |    | Il sistema deve consentire di rappresentare una tabella di parsing LL(1). Le celle devono essere identificate da un nonterminale e da un terminale, quest'ultimo possibilmente sostituito da un indicatore di esaurimento dell'input, e devono contenere un corpo di produzione.                             |
 |    | Il sistema deve fornire un meccanismo di costruzione di una tabella di parsing a partire da una grammatica in forma CFG pura, secondo le specifiche dell'algoritmo LL(1).                                                                                                                                    |
-
+|    | Il sistema deve consentire di rappresentare un CST, i cui nodi sono nodi di regola, etichettati da un nonterminale dichiarato e con una sequenza ordinata di figli, foglie, etichettate da un token, e nodi di errore, che conservano i terminali attesi e i token scartati.                                 |
+|    | Il sistema deve sostituire i nodi corrispondenti ai nonterminali introdotti dalla conversione EBNF-CFG con la sequenza dei rispettivi figli.                                                                                                                                                                 |
+|    | Il sistema deve riconoscere lo stream di token consultando la tabella di parsing secondo l'algoritmo LL(1), consumando lo stream in modo pigro.                                                                                                                                                              |
+|    | In assenza di una transizione applicabile il sistema deve registrare l'errore, scartare i token in input fino a raggiungere un terminale di sincronizzazione e riprendere l'analisi, restituendo gli errori nell'ordine in cui sono stati riscontrati.                                                       |
+|    | Il sistema deve riportare fra gli errori dell'analisi sintattica anche quelli prodotti dall'analisi lessicale e l'eventuale input residuo successivo al riconoscimento del simbolo iniziale.                                                                                                                 |
+|    | ...                                                                                                                                                                                                                                                                                                          | 
 // TODO: mettere gli id quando ci sono tutti
 
 ## Requisiti non funzionali
