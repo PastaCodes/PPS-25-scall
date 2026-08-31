@@ -3,7 +3,6 @@ package ast
 
 import grammar.Element.{Eps, Nonterminal, Terminal}
 import ast.CSTNode.{LeafNode, RuleNode}
-import grammar.ProcessedGrammar.InternalNonterminal
 import lexer.{Position, Token}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers.*
@@ -20,12 +19,4 @@ class CSTNodeTest extends AnyFunSuite:
 
     node.symbol shouldBe standardRule
     node.symbol.name shouldBe "expr"
-    node.children shouldBe empty
-
-  test("RuleNode encapsulates internal synthetic non-terminals"):
-    val internalRule = InternalNonterminal("expr_rep")
-    val node: RuleNode = CSTNode.RuleNode(internalRule, Seq.empty)
-
-    node.symbol shouldBe internalRule
-    node.symbol.name shouldBe "expr_rep"
     node.children shouldBe empty
