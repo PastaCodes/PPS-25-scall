@@ -141,50 +141,62 @@ il design necessita di disaccoppiare la visita dalla logica di costruzione dei n
 Come formalizzato nel diagramma delle classi, il risultato del parsing è strutturato tramite l'enum type `CSTNode`, 
 che partiziona i nodi in tre categorie mutuamente esclusive:
 * **RuleNode**: nodo interno generato da un'espansione grammaticale. 
-  Contiene un riferimento al Nonterminal associato e la sequenza ordinata di figli `Seq[CSTNode]`.
-* **LeafNode**: nodo foglia terminale, incapsula direttamente un Token generato dal Lexer.
-* **ErrorNode**: nodo speciale introdotto per supportare il recovery del parser. 
+  Contiene un riferimento al simbolo `Nonterminal` associato e la sequenza ordinata di figli `Seq[CSTNode]`.
+* **LeafNode**: nodo foglia terminale, incapsula direttamente un `Token` generato dal Lexer.
+* **ErrorNode**: nodo speciale introdotto per supportare il meccanismo di recovery del parser. 
   Traccia i simboli attesi `TerminalOrEoi` e gli eventuali token scartati per permettere una diagnostica dettagliata.
 
 ![](images/decoder_class_diagram.svg)
 
-### Design monadico e combinatori
-
-Per governare la complessità della navigazione del CST, 
-il design implementa un approccio monadico tramite il trait AstDecoder[A]. 
-L'esposizione delle funzioni di ordine superiore map e flatMap permette all'utilizzatore di comporre decodificatori base in pipeline complesse.
-Basandosi sul tipo Either, la monade implementa nativamente una semantica di short-circuiting (fail-fast): 
-in elaborazioni sequenziali e dipendenti, come all'interno del costrutto decodeSequence, 
-il fallimento di un nodo interrompe immediatamente la propagazione, scartando la computazione dei nodi rimanenti.
-L'operatore orElse interviene per mitigare l'interruzione introducendo una logica di fallback,
-meccanismo fondamentale per processare i RuleNode associati a produzioni con diverse alternative logiche (es. E1 $\lor$ E2).
-
-Il companion object AstDecoder espone inoltre costruttori di base (pure, fail) e la funzione aggregatrice decodeSequence. 
-Quest'ultima applica un decoder su una Seq[CSTNode] invertendo la cardinalità (da Seq[Either[Error, A]] a Either[Error, Seq[A]]), gestendo la propagazione iterativa.
-
-### Tassonomia e aggregazione degli errori
-
-Il risultato della funzione decode(CSTNode) è progettato per non sollevare eccezioni a runtime. 
-In caso di fallimento restituisce una variante del enum type `AstError`, la cui gerarchia modella semanticamente le cause dell'interruzione:
-* **UnexpectedNodeStructure**: si verifica quando il decodificatore incontra un nodo differente da quanto definito dalle aspettative 
-  (es. un LeafNode quando si aspettava un RuleNode per un dato nonterminale). 
-  Preserva la divergenza includendo sia il nodo aspettato `AnySymbol` che la realtà strutturale effettiva `CSTNode`.
-* **DecodingError**: fallimento semantico personalizzato, generato direttamente dalla business logic dell'utente (es. identificatore non valido).
-* **AggregateError**: pattern di errore composito. 
-  Utilizzato primariamente da combinatori come decodeSequence per evitare l'interruzione al primo fallimento su rami di decodifica logicamente indipendenti 
-  (es. una lista di statement consecutivi), collezionando tutti gli AstError per fornire un report diagnostico esaustivo all'utilizzatore.
-
-
 ### Strategia di astrazione e pattern matching
 
-A livello di design, CST e AST sono entità strutturalmente disaccoppiate. 
-Il CST è un albero $n$-ario i cui nodi interni rappresentano le produzioni e le cui foglie rappresentano i token. 
-Per evitare all'utilizzatore l'onere di navigare manualmente questa struttura algoritmica tramite indici o puntatori, 
-il design introduce il pattern degli Extractor Objects tipizzati.
+A livello di design, CST e AST sono entità indipendenti. 
+Per evitare all'utilizzatore l'onere di navigare manualmente il CST tramite indici posizionali o laboriose ispezioni manuali sui `RuleNode`, 
+il design introduce il pattern degli _Extractor Objects_ tipizzati.
 
-Attraverso gli estrattori, la complessità dell'albero viene mascherata: 
-l'utilizzatore definisce regole di decodifica dichiarative basate sul pattern matching.
-Quando un nodo CST associato a una specifica produzione (es. $E \rightarrow E + T$) viene processato, 
-l'estrattore lo decostruisce nei suoi sotto-nodi costituenti. 
-Se la decostruzione ha successo, vengono invocate ricorsivamente le regole di decodifica sui figli, 
-e i risultati vengono infine composti nel nodo AST corrispondente stabilito dall'utente.
+Attraverso gli estrattori, la complessità dell'albero viene mascherata, 
+consentendo di definire regole di decodifica dichiarative basate sul pattern matching nativo di Scala. 
+L'efficacia di questa scelta di design emerge chiaramente nel caso d'uso del linguaggio FINF.
+Per convertire le produzioni grammaticali nei nodi custom dell'AST (come _ValDecl_ o _FunDecl_),
+l'utilizzatore ricorre alla decostruzione sintattica. 
+
+Un estrattore come `valueDeclaration(VAL(_), ID(valName), COLON(_), typeNode, ASSIGN(_), valueNode, SEMI(_))` intercetta un RuleNode, 
+scarta la sintassi superflua (parole chiave, punteggiatura) catturata dalle wildcard 
+e lega direttamente alle variabili solo i nodi semantici rilevanti (_typeNode_, _valueNode_), 
+rendendo il mapping verso l'AST immediato e type-safe.
+
+### Design monadico e il companion object
+
+Per governare la complessità computazionale della conversione tra i due alberi, 
+il design implementa un approccio monadico. 
+Come illustrato nel diagramma UML, l'astrazione poggia sul trait `AstDecoder`. 
+L'esposizione delle funzioni di ordine superiore _map_ e _flatMap_ permette di comporre decodificatori elementari in pipeline complesse. 
+L'operatore _orElse_ fornisce una logica di fallback fondamentale per processare produzioni con molteplici alternative 
+(es. un'espressione che può essere una costante, un identificatore o un'operazione binaria).
+
+A supporto del trait, il design valorizza il ruolo del _companion object_ AstDecoder, 
+impiegato come modulo per orchestrare le funzionalità di libreria. 
+Oltre a fornire i costruttori di base (pure, fail), il companion object è utilizzato per iniettare metodi di estensione (extension methods) come _.as[A]_ e _.decodeAll[A]_. 
+Questa scelta idiomatica estende le funzionalità delle classi CSTNode e Seq[CSTNode] in modo del tutto non invasivo, 
+snellendo drasticamente la sintassi delle for-comprehension usate per la decodifica (per esempio in FINF).
+
+### Strategia di propagazione e aggregazione degli errori
+
+Il risultato del metodo _decode_ è progettato per preservare la purezza funzionale: 
+non solleva eccezioni a runtime, ma restituisce un Either[AstError, A]. 
+L'enum type AstError forma una gerarchia che modella semanticamente le cause dell'interruzione: 
+dal fallimento di business logic generato dall'utente, `DecodingError`, alle anomalie strutturali, 
+come `UnexpectedNodeStructure` (che preserva formalmente sia il nodo aspettato AnySymbol che la realtà strutturale effettiva CSTNode incontrata).
+
+A livello di design, per governare il flusso di esecuzione in presenza di fallimenti,
+il modulo di decodifica espone due strategie complementari:
+* **Fail-fast (Short-circuiting)**: Destinata all'elaborazione di strutture gerarchiche e logicamente dipendenti. 
+  In tali scenari, il fallimento nella decodifica di una sotto-componente invalida di riflesso l'intero costrutto. 
+  Facendo leva sulle proprietà algebriche del design monadico, il sistema interrompe l'analisi al primissimo errore riscontrato. 
+  Questa scelta progettuale previene l'insorgere di stati inconsistenti a valle e arresta tempestivamente l'esecuzione di computazioni superflue.
+* **Accumulazione esaustiva**: Concepita per l'elaborazione di collezioni composte da elementi logicamente indipendenti 
+  (ad esempio, un elenco di dichiarazioni separate all'interno di un programma).
+  In questo contesto, un'interruzione prematura sarebbe una mancanza che obbliga l'utilizzatore a un ciclo di risoluzione dei problemi frammentato e iterativo (essendo un solo errore riportato per volta). 
+  Per superare i limiti dello short-circuiting nativo, il design espone un costrutto dedicato che forza la valutazione dell'intera collezione, intercettando ogni singola anomalia. 
+  I molteplici fallimenti vengono quindi consolidati strutturalmente attraverso il pattern Composite `AggregateError`, 
+  permettendo al sistema di restituire un report diagnostico simultaneo ed esaustivo.
