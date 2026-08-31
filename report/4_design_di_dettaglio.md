@@ -1,23 +1,5 @@
 # Design di dettaglio
 
-## Analizzatore Lessicale (Lexer)
-L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale.
-Il suo scopo è la conversione della stringa di input in uno stream di token,
-mantenendo traccia delle coordinate spaziali per la visualizzazione degli errori.
-
-Le principali scelte di design sono ricadute su:
-* **Immutabilità e ADT**: Il tracciamento spaziale è delegato a un modulo Position modellato come ADT immutabile.
-    Ogni token generato detiene una referenza a una precisa istanza di Position,
-    garantendo l'assenza di side-effect durante le fasi successive di parsing.
-* **Gestione funzionale degli errori**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere la pipeline,
-  il design esclude il lancio di eccezioni in fase lessicale.
-  Viene adottato un approccio polimorfico per i token: i caratteri non validi vengono incapsulati in un costrutto specifico `ErrorToken`, 
-  permettendo al lexer di isolare il fallimento e proseguire la _tokenizzazione_ del resto del file.
-* **Risoluzione delle ambiguità**: La logica di longest-prefix-match e di priorità dei terminali è centralizzata in una pipeline funzionale 
-  che agisce da filtro progressivo (matching delle espressioni regolari, ordinamento per lunghezza del match, fallback sull'ordine di dichiarazione).
-
-![](images/lexerClassDiagram.svg)
-
 ## Grammatica processata
 
 ![](images/detailed_design_processed_grammar_class.svg)
@@ -106,5 +88,42 @@ Le soluzioni prodotte dall'engine vengono raccolte per popolare la tabella da re
 
 La libreria utilizzata per interfacciarsi con l'engine è caratterizzata da uno stile object-oriented e un ampio uso di stato mutabile,
 pertanto si prevede che in fase di implementazione emerga la necessità di uno strato intermedio che fornisca maggiore robustezza e consenta di mantenere uno stile idiomatico. 
+
+## Analizzatore Lessicale (Lexer)
+
+L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale.
+Il suo scopo è la conversione della stringa di input in una sequenza di token,
+ciascuno associato a un simbolo terminale, mantenendo traccia delle coordinate spaziali
+calcolate in base alla posizione nel testo originale.
+Le principali scelte di design sono ricadute su:
+* **Immutabilità e ADT**: Il tracciamento spaziale è delegato a un modulo Position modellato come tipo immutabile.
+  Ogni token generato detiene una referenza a una precisa istanza di Position,
+  garantendo l'assenza di side-effect durante le successive fasi di analisi.
+* **Gestione funzionale degli errori**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi,
+  il design esclude il lancio di eccezioni in fase lessicale.
+  Viene adottato un approccio polimorfico: i caratteri non validi vengono isolati in un costrutto specifico ErrorToken,
+  permettendo al lexer di incapsulare il fallimento e proseguire l'analisi del resto dell'input.
+
+![](images/lexer_class_diagram.svg)
+
+### Algoritmo di matching e risoluzione delle ambiguità
+
+L'algoritmo di tokenizzazione procede consumando iterativamente porzioni della stringa di input $S$. Ad ogni passo, il sistema valuta l'insieme dei terminali $T$ definiti nella grammatica.
+Sia $p_t$ il prefisso di $S$ che verifica la regola associata al terminale $t \in T$. Si definisce l'insieme dei match validi come:
+$M = \lbrace\, (t, p_t) \;\vert{}\; p_t \text{ è un prefisso valido di } S \,\rbrace$
+
+Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategie di filtraggio:
+* **Maximal match (Longest-prefix-match)**: Il sistema seleziona il sottoinsieme $M_{max} \subseteq M$ che massimizza la lunghezza del prefisso riconosciuto. Ovvero:
+  $M_{max} = \lbrace\, (t, p_t) \in M \;\vert{}\; \vert{}p_t\vert{} = \max_{(x, p_x) \in M} \vert{}p_x\vert{} \,\rbrace$
+* **Fallback posizionale (Priorità)**: Se $\vert{}M_{max}\vert{} > 1$, si verifica una collisione fra terminali che riconoscono la medesima porzione di testo
+  (ad esempio, una parola chiave come if che fa match sia col terminale IF che col terminale generico ID).
+  Il sistema risolve il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica.
+  Definendo $idx(t)$ come l'indice di dichiarazione del terminale $t$, si estrae l'unico vincitore $(t^*, p_{t^*})$ tale che $idx(t^*)$ sia minimo.
+* **Scarto dei terminali ignorabili**: Se il terminale vincitore $t^*$ è esplicitamente marcato come ignorabile (es. spaziature o commenti),
+  il prefisso $p_{t^*}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output.
+* **Error fallback**: Nel caso limite in cui l'insieme dei match validi sia vuoto ($M = \emptyset$), il sistema non riconosce alcun prefisso.
+  Per evitare stalli e proseguire l'analisi, il lexer consuma esattamente il primo carattere di $S$,
+  lo incapsula in un ErrorToken tracciandone la posizione originaria, e riprende l'algoritmo sul resto della stringa.
+
 
 ## Decodifica CST-AST
