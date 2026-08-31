@@ -38,7 +38,7 @@ class AstDecoderTest extends AnyFunSuite:
         valStr.toIntOption
           .map(IntLiteral(_))
           .toRight(AstError.DecodingError(s"Expected integer: '$valStr'"))
-      case _ => Left(AstError.UnexpectedNode("LeafNode", "RuleNode"))
+      case otherNode => Left(AstError.UnexpectedNodeStructure(numTerminal, otherNode))
 
   given exprDecoder: AstDecoder[Expr] with
     def decode(node: CSTNode): Either[AstError, Expr] = node match
