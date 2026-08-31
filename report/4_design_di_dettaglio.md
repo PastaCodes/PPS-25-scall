@@ -131,8 +131,49 @@ Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategi
 
 ## Decodifica CST-AST
 
-Il sistema deve fornire un meccanismo di decodifica per elaborare iterativamente l'albero sintattico concreto (CST), dipendente dalla struttura della grammatica,
-estraendone gli elementi utili alla costruzione dell'albero astratto (AST) specifico per il dominio dell'utilizzatore.
+Il processo di decodifica trasforma l'albero sintattico concreto (CST), generato dal parser,
+nell'albero sintattico astratto (AST) specifico per il dominio dell'utente.
+Poiché la forma del CST è strettamente vincolata alle regole di derivazione della grammatica formale,
+il design necessita di disaccoppiare la visita dalla logica di costruzione dei nodi finali.
+
+### Modellazione del CST
+
+Come formalizzato nel diagramma delle classi, il risultato del parsing è strutturato tramite l'enum type `CSTNode`, 
+che partiziona i nodi in tre categorie mutuamente esclusive:
+* **RuleNode**: nodo interno generato da un'espansione grammaticale. 
+  Contiene un riferimento al Nonterminal associato e la sequenza ordinata di figli `Seq[CSTNode]`.
+* **LeafNode**: nodo foglia terminale, incapsula direttamente un Token generato dal Lexer.
+* **ErrorNode**: nodo speciale introdotto per supportare il recovery del parser. 
+  Traccia i simboli attesi `TerminalOrEoi` e gli eventuali token scartati per permettere una diagnostica dettagliata.
+
+![](images/decoder_class_diagram.svg)
+
+### Design monadico e combinatori
+
+Per governare la complessità della navigazione del CST, 
+il design implementa un approccio monadico tramite il trait AstDecoder[A]. 
+L'esposizione delle funzioni di ordine superiore map e flatMap permette all'utilizzatore di comporre decodificatori base in pipeline complesse.
+Basandosi sul tipo Either, la monade implementa nativamente una semantica di short-circuiting (fail-fast): 
+in elaborazioni sequenziali e dipendenti, come all'interno del costrutto decodeSequence, 
+il fallimento di un nodo interrompe immediatamente la propagazione, scartando la computazione dei nodi rimanenti.
+L'operatore orElse interviene per mitigare l'interruzione introducendo una logica di fallback,
+meccanismo fondamentale per processare i RuleNode associati a produzioni con diverse alternative logiche (es. E1 $\lor$ E2).
+
+Il companion object AstDecoder espone inoltre costruttori di base (pure, fail) e la funzione aggregatrice decodeSequence. 
+Quest'ultima applica un decoder su una Seq[CSTNode] invertendo la cardinalità (da Seq[Either[Error, A]] a Either[Error, Seq[A]]), gestendo la propagazione iterativa.
+
+### Tassonomia e aggregazione degli errori
+
+Il risultato della funzione decode(CSTNode) è progettato per non sollevare eccezioni a runtime. 
+In caso di fallimento restituisce una variante del enum type `AstError`, la cui gerarchia modella semanticamente le cause dell'interruzione:
+* **UnexpectedNodeStructure**: si verifica quando il decodificatore incontra un nodo differente da quanto definito dalle aspettative 
+  (es. un LeafNode quando si aspettava un RuleNode per un dato nonterminale). 
+  Preserva la divergenza includendo sia il nodo aspettato `AnySymbol` che la realtà strutturale effettiva `CSTNode`.
+* **DecodingError**: fallimento semantico personalizzato, generato direttamente dalla business logic dell'utente (es. identificatore non valido).
+* **AggregateError**: pattern di errore composito. 
+  Utilizzato primariamente da combinatori come decodeSequence per evitare l'interruzione al primo fallimento su rami di decodifica logicamente indipendenti 
+  (es. una lista di statement consecutivi), collezionando tutti gli AstError per fornire un report diagnostico esaustivo all'utilizzatore.
+
 
 ### Strategia di astrazione e pattern matching
 
