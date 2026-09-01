@@ -357,10 +357,37 @@
     </thead>
     <tbody>
         <tr>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td rowspan="2">CST to AST conversion</td>
+            <td>Change decodeRightRecursiveList logic</td>
+            <td>JT</td>
+            <td>3</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Use a reference for error handling instead of string</td>
+            <td>JT</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td rowspan="2">FINF language use case</td>
+            <td>Implement a CLI to display a demo</td>
+            <td>DM</td>
+            <td>?</td>
+            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+        </tr>
+        <tr>
+            <td>Write examples of .finf files</td>
+            <td>DM</td>
+            <td>1</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>-</td>
+            <td>Compile fat jar for release</td>
+            <td>MB</td>
+            <td>?</td>
+            <td>?</td><td>?</td><td>?</td><td>0</td><td>0</td>
         </tr>
     </tbody>
 </table>
