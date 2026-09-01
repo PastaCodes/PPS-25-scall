@@ -40,6 +40,10 @@ Inoltre, essendo che il prodotto rispettava quasi tutti i requisiti descritti, s
 sul controllare e documentari i file, oltre al terminare gli ultimi task previsti.
 Infine, è stato assegnato il compito di realizzare il fat jar per la release del codice.
 
+---
+
+Il product backlog e i vari sprint backlog sono disponibili in [backlogs.md](). // TODO
+
 ## Commenti finali
 
 Quest'esperienza ci ha fatto apprezzare e allo stesso tempo detestare certi aspetti della metodologia scrum.
