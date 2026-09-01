@@ -10,10 +10,11 @@ Inoltre fornisce dei costrutti a supporto della scrittura di codice, come un DSL
 per la realizzazione di test esplicativi e facilmente leggibili.
 Questo consente inoltre di capire il funzionamento dell'implementazione a monte semplicemente osservando i test.
 
+Ognuna delle componenti centrali del sistema è dunque caratterizzata da un grado di copertura totale in termini di _unit test_.
+
 ### Esempi rilevanti
 
 Questi esempi mostrano come le tecniche descritte sopra siano state applicate nel concreto all'interno del progetto.
-
 
 ```scala
 test("Lexer should return empty seq for empty string"):
@@ -30,7 +31,13 @@ test("Lexer implements longest-prefix-match"):
   tokens.collect { case Token.Valid(t, _, _) => t } shouldBe List(BasicGrammar.idRule)
 ```
 
----
+In alcuni casi viene richiesto di verificare strutture non banali, facilitando l'operazione tramite pattern matching.
 
-Grado di copertura: Unit test + Componenti robuste (?) + demo eseguibile
-
+```scala
+test("oneOrMore is processed by concatenating repetition to all alternatives"):
+    ProcessedGrammar.visit((a | b).+).alternatives.toSeq should matchPattern:
+      case Seq(
+        Seq(s1, r1: InternalNonterminal),
+        Seq(s2, r2: InternalNonterminal)
+      ) if Set(s1, s2) == Set(a, b) && r1 == r2 =>
+```
