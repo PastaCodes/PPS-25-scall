@@ -16,7 +16,7 @@
             <td>1</td>
             <td>DSL constructs</td>
             <td>14</td>
-            <td>?</td>
+            <td>6</td>
         </tr>
         <tr>
             <td>2</td>
@@ -40,7 +40,7 @@
             <td>5</td>
             <td>Syntactical analysis</td>
             <td>30</td>
-            <td>?</td>
+            <td>35</td>
         </tr>
         <tr>
             <td>6</td>
@@ -103,17 +103,23 @@
     </thead>
     <tbody>
         <tr>
-            <td rowspan="2">DSL constructs</td>
-            <td>Define types and operations for grammar production elements</td>
+            <td rowspan="3">DSL constructs</td>
+            <td>Define the Element ADT and the EBNF operators</td>
             <td>DM</td>
-            <td>10</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>2</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Unify terminals and restore structural equality</td>
+            <td>DM</td>
+            <td>2</td>
+            <td>2</td><td>3</td><td>1</td><td>0</td><td>0</td>
         </tr>
         <tr>
             <td>Infer symbol names from definition</td>
             <td>DM</td>
-            <td>4</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>1</td><td>0</td><td>0</td>
         </tr>
         <tr>
             <td rowspan="5">Grammar conversion from EBNF to CFG</td>
@@ -213,7 +219,7 @@
             <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
         </tr>
         <tr>
-            <td rowspan="3">Syntactical analysis</td>
+            <td rowspan="5">Syntactical analysis</td>
             <td>Compute FIRST and FOLLOW sets</td>
             <td>MB</td>
             <td>5</td>
@@ -225,11 +231,23 @@
             <td>3</td>
             <td>3</td><td>3</td><td>3</td><td>3</td><td>0</td>
         </tr>
-        <tr>
-            <td>Implement parser with the LL(1) algorithm</td>
+                <tr>
+            <td>Table-driven expansion and terminal matching</td>
             <td>DM</td>
-            <td>15</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>5</td>
+            <td>5</td><td>2</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Build the CST during the recursive descent</td>
+            <td>DM</td>
+            <td>4</td>
+            <td>4</td><td>4</td><td>1</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Simplify parseSequence and extract the result alias</td>
+            <td>DM</td>
+            <td>3</td>
+            <td>3</td><td>3</td><td>3</td><td>1</td><td>0</td>
         </tr>
         <tr>
             <td rowspan="5">CST to AST conversion</td>
@@ -290,12 +308,24 @@
             <td>2</td>
             <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
         </tr>
-        <tr>
-            <td>Syntactical analysis</td>
-            <td>Accumulate parsing errors instead of short-circuiting</td>
+                <tr>
+            <td rowspan="3">Syntactical analysis</td>
+            <td>Add ErrorNode to represent unparsable fragments</td>
             <td>DM</td>
-            <td>13</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>2</td>
+            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Implement the Parsing monad for state and error accumulation</td>
+            <td>DM</td>
+            <td>4</td>
+            <td>4</td><td>4</td><td>1</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Recover by synchronisation and collect all errors</td>
+            <td>DM</td>
+            <td>4</td>
+            <td>4</td><td>4</td><td>4</td><td>1</td><td>0</td>
         </tr>
         <tr>
             <td rowspan="4">FINF language</td>
@@ -369,18 +399,38 @@
             <td>2</td>
             <td>2</td><td>2</td><td>0</td><td>0</td><td>0</td>
         </tr>
+                <tr>
+            <td rowspan="2">Syntactical analysis</td>
+            <td>Flatten internal nonterminals out of the CST</td>
+            <td>DM</td>
+            <td>2</td>
+            <td>2</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>Move error descriptions into the library</td>
+            <td>DM</td>
+            <td>3</td>
+            <td>3</td><td>3</td><td>1</td><td>0</td><td>0</td>
+        </tr>
         <tr>
             <td rowspan="2">FINF language use case</td>
             <td>Implement a CLI to display a demo</td>
             <td>DM</td>
-            <td>?</td>
-            <td>?</td><td>?</td><td>?</td><td>?</td><td>?</td>
+            <td>4</td>
+            <td>4</td><td>1</td><td>0</td><td>0</td><td>0</td>
         </tr>
         <tr>
             <td>Write examples of .finf files</td>
             <td>DM</td>
             <td>1</td>
             <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
+        </tr>
+        <tr>
+            <td>-</td>
+            <td>Expose a single-entry analyzer and cover the pipeline with a test</td>
+            <td>DM</td>
+            <td>2</td>
+            <td>2</td><td>2</td><td>1</td><td>0</td><td>0</td>
         </tr>
         <tr>
             <td>-</td>
