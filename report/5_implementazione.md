@@ -139,7 +139,7 @@ quali la valutazione pigra, la contextual abstraction e il design monadico.
 L'analizzatore lessicale è stato progettato per operare in modo completamente privo di stato mutabile.
 L'avanzamento lungo la stringa di input è tracciato tramite l'allocazione di istanze immutabili della classe Cursor.
 Per garantire che il lexer consumi memoria ed esegua elaborazioni solo quando il parser richiede nuovi token, 
-l'iterazione sull'input è implementata sfruttando il costrutto LazyList.unfold:
+l'iterazione sull'input è implementata sfruttando il costrutto `LazyList.unfold`:
 
 ```scala
 def tokenize(input: String): LazyList[Token] =
@@ -159,11 +159,11 @@ def tokenize(input: String): LazyList[Token] =
   LazyList.unfold(Cursor(0, Position(1, 1)))(nextValid)
 ```
 
-La funzione nextValid incapsula la ricorsione tail (@tailrec) e la logica di avanzamento. 
-Tramite unfold, la lista pigra viene popolata generando il seed successivo (Cursor) in base al match corrente,
+La funzione `nextValid` incapsula la ricorsione tail (@tailrec) e la logica di avanzamento. 
+Tramite _unfold_, la lista pigra viene popolata generando il seed successivo (_Cursor_) in base al match corrente,
 garantendo scalabilità anche su sorgenti di grandi dimensioni.
 La risoluzione delle ambiguità (Longest-prefix-match) è implementata in stile dichiarativo
-mediante una pipeline funzionale che fa uso di flatMap, maxByOption e combinatori su tuple, 
+mediante una pipeline funzionale che fa uso di _flatMap_, _maxByOption_ e combinatori su tuple, 
 operando sui terminali indicizzati:
 
 ```scala
@@ -176,10 +176,10 @@ private def findLongestMatch(input: String, cursor: Cursor): Option[Token.Valid]
     .map(_._1)
 ```
 
-L'estrazione del match è delega a matchPrefixAt, 
+L'estrazione del match è delega a `matchPrefixAt`, 
 implementato come extension method sull'entità Terminal nel companion object Lexer. 
 Questo metodo incapsula l'interoperabilità con le espressioni regolari della libreria standard `java.util.regex.Matcher`, 
-verificando la corrispondenza esatta a partire dall'offset corrente tramite il metodo lookingAt(). 
+verificando la corrispondenza esatta a partire dall'offset corrente tramite il metodo `lookingAt()`. 
 I risultati vengono mappati in tuple contenenti il token valido e l'indice di dichiarazione. 
 La risoluzione dei conflitti posizionali si riduce all'operazione 
 `maxByOption((token, index) => (token.lexeme.length, -index))`, 
@@ -191,7 +191,7 @@ venga selezionato il terminale dichiarato per primo.
 Per trasformare il codice da CST a AST serve una serie di passaggi concatenati che rischiano di bloccarsi al minimo errore.
 Per questo, il sistema deve offrire degli strumenti che permettano agli utenti di personalizzare il processo.
 Questa problematica è stata risolta implementando il pattern architetturale delle monadi attraverso il trait AstDecoder[A].
-Il decoder espone le funzioni di ordine superiore map e flatMap 
+Il decoder espone le funzioni di ordine superiore _map_ e _flatMap_ 
 che permettono di comporre decodificatori elementari in pipeline type-safe:
 
 ```scala
@@ -206,6 +206,50 @@ trait AstDecoder[A]:
     self.decode(node).orElse(fallback.decode(node))
 ```
 
+Per ridurre il boilerplate e agevolare l'uso dell'API, 
+il design sfrutta le contextual abstractions (using e given) 
+e gli extension methods nel companion object AstDecoder. 
+Il metodo di estensione `as[A]` funge da entry-point contestuale: invocando direttamente `node.as[Expr]`, 
+si delega al compilatore la risoluzione implicita della strategia di decodifica appropriata per il tipo atteso.
+
+Un aspetto implementativo cruciale riguarda l'elaborazione delle sequenze piatte generate dal parsing LL(1). 
+Per gestire e raggruppare queste liste di nodi senza ricorrere a mutabilità, 
+il companion object introduce la funzione `decodeSequence`:
+
+```scala
+def decodeSequence[A](nodes: Seq[CSTNode])(extractChunk: PartialFunction[Seq[CSTNode], (Either[AstError, A], Seq[CSTNode])]): Either[AstError, Seq[A]] =
+  if nodes.isEmpty then Right(Seq.empty)
+  else extractChunk.lift(nodes) match
+    case Some((decodedElement, remainingNodes)) =>
+      for
+        element <- decodedElement
+        decodedRest <- decodeSequence(remainingNodes)(extractChunk)
+      yield element +: decodedRest
+    case None => Left(AstError.DecodingError("Invalid sequence structure"))
+```
+
+Questa funzione accetta una _PartialFunction_ definita dall'utente 
+per isolare ed estrarre iterativamente segmenti logici significativi di nodi CST (chunk).
+Grazie all'uso combinato di `lift(nodes)` (che converte la funzione parziale in un'estrazione sicura basata su _Option_) e della for-comprehension, 
+i segmenti estratti vengono decodificati e concatenati ricorsivamente nella collezione AST finale.
+Se il blocco di nodi non corrisponde ad alcun pattern valido,
+la ricorsione fallisce in modo type-safe restituendo un `AstError.DecodingError`.
+
+Infine, l'estensione `decodeAll[A]` applicata a `Seq[CSTNode]` implementa la logica di aggregazione esaustiva degli errori:
+
+```scala
+extension (nodes: Seq[CSTNode])
+  def decodeAll[A](using decoder: AstDecoder[A]): Either[AstError, Seq[A]] =
+    val (errors, validNodes) = nodes.partitionMap(_.as[A])
+    errors match
+      case Seq() => Right(validNodes)
+      case Seq(single) => Left(single)
+      case multiple => Left(AstError.AggregateError(multiple))
+```
+
+Utilizzando `partitionMap`, il sistema non si interrompe al primo errore, ma valuta l'intera collezione. 
+In presenza di difetti multipli (es. una sequenza di dichiarazioni indipendenti malformate), 
+i fallimenti vengono accumulati restituendo un `AggregateError` per una diagnostica simultanea.
 
 
 
