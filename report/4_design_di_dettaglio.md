@@ -155,6 +155,9 @@ Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategi
 La sua interfaccia riflette la separazione tra la fase di costruzione, che si compie una volta sola nella grammatica, e la fase di analisi, ripetibile su input diversi senza ricalcolare nulla.
 
 ### Albero sintattico concreto
+
+![](images/parser_class_diagram.svg)
+
 Il CST è un _sum type_ con tre casi:
 * un nodo di regola, etichettato da un nonterminale e provvisto di una sequenza ordinata di figli.
 * una foglia, etichettata dal token riconosciuto
@@ -184,6 +187,8 @@ L'insieme di sincronizzazione adottato è una sovrastima di quello minimo, in qu
 distinguere i simboli annullabili senza alcun grosso beneficio sulla qualità delle segnalazioni.
 
 La presenza di input residuo dopo il riconoscimento del simbolo iniziale è segnalata come errore invece che essere ignorata.
+
+![](images/parser_activity_diagram.svg)
 
 ## Decodifica CST-AST
 
