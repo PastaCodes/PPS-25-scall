@@ -120,3 +120,70 @@ Da qui in poi vai con un filo di gas.
 parsing_table_cell(X, A, B) :- production(X, B), first_str(B, A), A \== 0.
 parsing_table_cell(X, A, B) :- production(X, B), first_str(B, 0), follow(X, A).
 ```
+
+## Jacopo Turchi
+
+File prodotti: `lexer/Lexer`, `lexer/Position`, `lexer/Token`, `ast/AstDecoder`, `ast/AstError`, `ast/CSTNode`, `ast/TypedExtractors`, `finf/ast/FinfNode`, `finf/ast/FinfDecoder`.
+
+Test prodotti: `lexer/LexerLongestPrefixMatchTest`, `lexer/LexerPositionTrackingTest`, `lexer/LexerPrefixMatchFilterTest`, `ast/AstDecoderTest`, `ast/CSTNodeTest`, `ast/ExtractorsTest`.
+
+Il mio contributo si è concentrato sullo sviluppo della pipeline di front-end per l'analisi lessicale 
+e sull'implementazione del motore di decodifica da CST ad AST. 
+L'implementazione traduce i requisiti di assenza di side-effect e disaccoppiamento 
+previsti nel design avvalendosi di costrutti avanzati di Scala 3, 
+quali la valutazione pigra, la contextual abstraction e il design monadico.
+
+### Lexer
+
+L'analizzatore lessicale è stato progettato per operare in modo completamente privo di stato mutabile.
+L'avanzamento lungo la stringa di input è tracciato tramite l'allocazione di istanze immutabili della classe Cursor.
+Per garantire che il lexer consumi memoria ed esegua elaborazioni solo quando il parser richiede nuovi token, 
+l'iterazione sull'input è implementata sfruttando il costrutto LazyList.unfold:
+
+```scala
+def tokenize(input: String): LazyList[Token] =
+  @tailrec
+  def nextValid(cursor: Cursor): Option[(Token, Cursor)] =
+    if cursor.offset >= input.length then None
+    else
+      findLongestMatch(input, cursor) match
+        case Some(validToken) if validToken.terminal.isSkipped =>
+          nextValid(cursor.advance(validToken.lexeme))
+        case Some(validToken) =>
+          Some(validToken -> cursor.advance(validToken.lexeme))
+        case None =>
+            val errorChar = input.charAt(cursor.offset).toString
+            val errorToken = Token.Error(errorChar, cursor.pos)
+            Some(errorToken -> cursor.advance(errorChar))
+  LazyList.unfold(Cursor(0, Position(1, 1)))(nextValid)
+```
+
+La funzione nextValid incapsula la ricorsione tail (@tailrec) e la logica di avanzamento. 
+Tramite unfold, la lista pigra viene popolata generando il seed successivo (Cursor) in base al match corrente,
+garantendo scalabilità anche su sorgenti di grandi dimensioni.
+La risoluzione delle ambiguità (Longest-prefix-match) è implementata in stile dichiarativo
+mediante una pipeline funzionale che fa uso di flatMap, maxByOption e combinatori su tuple, 
+operando sui terminali indicizzati:
+
+```scala
+private def findLongestMatch(input: String, cursor: Cursor): Option[Token.Valid] =
+  indexedTerminals
+    .flatMap: (t, index) =>
+      t.matchPrefixAt(input, cursor.offset)
+        .map(lexeme => Token.Valid(t, lexeme, cursor.pos) -> index)
+    .maxByOption((token, index) => (token.lexeme.length, -index))
+    .map(_._1)
+```
+
+### AstDecoder
+
+La trasformazione CST-AST richiede la composizione di operazioni dipendenti soggette a fallimento strutturale. 
+Questa problematica è stata risolta implementando il pattern architetturale delle monadi attraverso il trait AstDecoder[A].
+Il decoder espone le funzioni di ordine superiore map e flatMap che permettono di comporre decodificatori elementari in pipeline type-safe:
+
+
+
+
+
+
+
