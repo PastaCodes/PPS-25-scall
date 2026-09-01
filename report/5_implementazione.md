@@ -6,6 +6,7 @@ Indipendentemente da questo, il processo di implementazione viene svolto singola
 ## Buda Marco
 
 File prodotti: `grammar/ProcessedGrammar`, `parser/ParsingTable`, `prolog/parsing_table`, `util/Scala2P`, `util/CollectionUtils`, `Finf`.
+
 Test prodotti: `grammar/ProcessedGrammarAlternativesTest`, `grammar/ProcessedGrammarProductionsTest`, `grammar/LeftFactoringTest`, `parser/ParsingTableTest`.
 
 Il mio contributo si è focalizzato sul processo di conversione di grammatiche, implementato in stile funzionale, e sulla costruzione di tabelle di parsing, implementata invece attraverso la programmazione logica.
