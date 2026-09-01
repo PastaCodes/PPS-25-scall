@@ -368,15 +368,20 @@ Non monta la pipeline, la richiede alla libreria sotto forma di analizzatore, co
 ```scala
 type Analyzer[A] = String => AnalysisReport[A]
 
-def analyzer[A](grammar: Grammar, startSymbol: Nonterminal)(using decoder: AstDecoder[A]): Analyzer[A] =
-  val lexer = Lexer(grammar.terminals)
-  val processed = ProcessedGrammar.of(grammar, startSymbol)
-  val table = ParsingTable.compute(processed)
-  val parser = Parser(table, startSymbol)
-  input =>
-    val tokens = lexer.tokenize(input)
-    val ParseReport(parseTree, parseErrors) = parser.parseAll(tokens)
-    AnalysisReport(parseTree, parseErrors)
+  case class AnalysisReport[A](decoded: Either[AstError, A], parseErrors: Seq[ParseError]):
+    def isParseValid: Boolean = parseErrors.isEmpty
+    def isValid: Boolean = isParseValid && decoded.isRight
+
+  def analyzer[A](grammar: Grammar, startSymbol: Nonterminal)(using decoder: AstDecoder[A]): Analyzer[A] =
+    val lexer = Lexer(grammar.terminals)
+    val processed = ProcessedGrammar.of(grammar, startSymbol)
+    val table = ParsingTable.compute(processed)
+    val parser = Parser(table, startSymbol)
+    input =>
+      val tokens = lexer.tokenize(input)
+      val ParseReport(parseTree, parseErrors) = parser.parseAll(tokens)
+      val decoded = decoder.decode(parseTree)
+      AnalysisReport(decoded, parseErrors)
 ```
 ## Turchi Jacopo
 
