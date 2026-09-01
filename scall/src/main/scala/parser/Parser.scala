@@ -3,63 +3,71 @@ package parser
 
 import ast.CSTNode
 import ast.CSTNode.*
-import grammar.Element.{Nonterminal, Terminal}
-import grammar.ProcessedGrammar.{AnyNonterminal, AnySymbol, SymbolSeq}
+import grammar.Element.{Nonterminal, Terminal, TerminalOrEoi, Eoi}
+import grammar.ProcessedGrammar.{AnyNonterminal, AnySymbol, SymbolSeq, InternalNonterminal}
 import lexer.Token
-import parser.ParsingTable.{Eof, ParsingTable, TerminalOrEof}
+import parser.ParsingTable.ParsingTable
 import parser.Parsing.*
 
-enum ParseError:
-  case UnexpectedToken(expected: Seq[String], found: Token.Valid)
-  case UnexpectedEndOfInput(expected: Seq[String])
-  case LexicalError(token: Token.Error)
-  case TrailingInput(token: Token)
-
+/** Result of an analysis: the [[CSTNode CST]] produced by the parser, which is complete even
+ *  for malformed input, together with the errors met, in the order they were found.
+ */
 case class ParseReport(tree: CSTNode, errors: Seq[ParseError]):
   def isValid: Boolean = errors.isEmpty
 
+/** A table-driven LL(1) parser. Whenever no transition applies the error is recorded and the
+ *  analysis resumes by discarding tokens up to a synchronisation terminal, so that a single
+ *  run reports every error rather than only the first one.
+ */
 class Parser(table: ParsingTable, startSymbol: Nonterminal):
   import ParseError.*
 
-  private type Sync = Set[TerminalOrEof]
+  private type Sync = Set[TerminalOrEoi]
 
+  /** Recognises the whole token stream, returning the tree together with every error met. */
   def parseAll(tokens: LazyList[Token]): ParseReport =
     val step = parseProgram.run(tokens)
     ParseReport(step.value, step.errors)
 
+  /** Recognises the whole token stream, reducing the outcome to the first error, if any. */
   def parse(tokens: LazyList[Token]): Either[ParseError, CSTNode] =
     val report = parseAll(tokens)
     report.errors.headOption.toLeft(report.tree)
 
   private def parseProgram: Parsing[CSTNode] =
     for
-      tree <- parseSymbol(startSymbol)(using Set(Eof))
+      nodes <- parseSymbol(startSymbol)(using Set(Eoi))
       _ <- trailingInput
-    yield tree
+    yield nodes.head
 
   private def trailingInput: Parsing[Unit] =
     peek.flatMap:
       case Some(token) => record(TrailingInput(token))
       case None => pure(())
 
-  private def parseSymbol(symbol: AnySymbol)(using sync: Sync): Parsing[CSTNode] =
+  private def parseSymbol(symbol: AnySymbol)(using sync: Sync): Parsing[Seq[CSTNode]] =
     lookahead.flatMap: next =>
       expand(symbol, next).getOrElse:
         for
           _ <- record(unexpected(symbol, next))
           junk <- skipUntil(symbol.starters union sync)
           resumed <- lookahead
-          node <- expand(symbol, resumed).getOrElse(pure(ErrorNode(symbol, junk)))
+          node <- expand(symbol, resumed).getOrElse(pure(Seq(ErrorNode(symbol.starters, junk))))
         yield node
 
-  private def expand(symbol: AnySymbol, next: Option[Token.Valid])(using Sync): Option[Parsing[CSTNode]] =
+  private def expand(symbol: AnySymbol, next: Option[Token.Valid])(using Sync): Option[Parsing[Seq[CSTNode]]] =
     (symbol, next) match
       case (terminal: Terminal, Some(token)) if token.terminal == terminal =>
-        Some(advance andThen pure(LeafNode(token)))
+        Some(advance andThen pure(Seq(LeafNode(token))))
       case (nonterminal: AnyNonterminal, _) =>
         table.get((nonterminal, next.terminal)).map: production =>
-          parseSequence(production).map(RuleNode(nonterminal, _))
+          parseSequence(production).map(nodesFor(nonterminal, _))
       case _ => None
+
+  private def nodesFor(nonterminal: AnyNonterminal, children: Seq[CSTNode]): Seq[CSTNode] =
+    nonterminal match
+      case rule: Nonterminal => Seq(RuleNode(rule, children))
+      case _: InternalNonterminal => children
 
   private def parseSequence(symbols: SymbolSeq)(using sync: Sync): Parsing[Seq[CSTNode]] =
     symbols match
@@ -67,8 +75,8 @@ class Parser(table: ParsingTable, startSymbol: Nonterminal):
       case symbol +: rest =>
         for
           node <- parseSymbol(symbol)(using sync union rest.starters)
-          nodes <- parseSequence(rest)
-        yield node +: nodes
+          others <- parseSequence(rest)
+        yield node ++ others
 
   private def lookahead: Parsing[Option[Token.Valid]] =
     peek.flatMap:
@@ -82,7 +90,7 @@ class Parser(table: ParsingTable, startSymbol: Nonterminal):
       case _ => pure(Seq.empty)
 
   private def unexpected(symbol: AnySymbol, next: Option[Token.Valid]): ParseError =
-    val expected = symbol.starters.map(_.name).toSeq.sorted
+    val expected = symbol.starters
     next match
       case Some(token) => UnexpectedToken(expected, token)
       case None => UnexpectedEndOfInput(expected)
@@ -97,9 +105,4 @@ class Parser(table: ParsingTable, startSymbol: Nonterminal):
     private def starters: Sync = symbols.flatMap(_.starters).toSet
 
   extension (next: Option[Token.Valid])
-    private def terminal: TerminalOrEof = next.map(_.terminal).getOrElse(Eof)
-
-  extension (terminal: TerminalOrEof)
-    private def name: String = terminal match
-      case t: Terminal => t.name
-      case Eof => "end of input"
+    private def terminal: TerminalOrEoi = next.map(_.terminal).getOrElse(Eoi)

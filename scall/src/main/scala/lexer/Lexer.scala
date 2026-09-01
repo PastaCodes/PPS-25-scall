@@ -8,9 +8,13 @@ private[lexer] case class Cursor(offset: Int, pos: Position):
   def advance(text: String): Cursor =
     Cursor(offset + text.length, pos.advanceBy(text))
 
+/** A functional lexical analyzer that translates a raw input string into a lazy stream
+ *  of [[Token]]s based on a given sequence of grammar [[Terminal]]s.
+ */
 class Lexer(terminals: Seq[Terminal]):
   private val indexedTerminals = terminals.zipWithIndex
 
+  /** Lazily evaluates the input string to produce a stream of tokens using the longest-prefix-match rule. */
   def tokenize(input: String): LazyList[Token] =
 
     @tailrec

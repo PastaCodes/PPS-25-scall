@@ -4,8 +4,13 @@ package parser
 import lexer.Token
 import parser.Parsing.pure
 
+/** One step of analysis: the value produced, the tokens still to be read and the errors met. */
 private case class Step[A](value: A, rest: LazyList[Token], errors: Seq[ParseError])
 
+/** Composition of a state, the residual token stream, and an accumulator of errors.
+ *  Analysis is written by combining the primitives of the companion object, so that the stream
+ *  is threaded and the errors are concatenated by the composition itself.
+ */
 private case class Parsing[A](run: LazyList[Token] => Step[A]):
   def flatMap[B](next: A => Parsing[B]): Parsing[B] = Parsing: tokens =>
     val step = run(tokens)
