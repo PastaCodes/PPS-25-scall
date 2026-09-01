@@ -129,6 +129,7 @@ Test prodotti: `lexer/LexerLongestPrefixMatchTest`, `lexer/LexerPositionTracking
 
 Il mio contributo si è concentrato sullo sviluppo della pipeline di front-end per l'analisi lessicale 
 e sull'implementazione del motore di decodifica da CST ad AST. 
+Inoltre mi sono occupato di realizzare le regole di costruzione dell'AST, a partire dal CST, per il linguaggio FINF.
 L'implementazione traduce i requisiti di assenza di side-effect e disaccoppiamento 
 previsti nel design avvalendosi di costrutti avanzati di Scala 3, 
 quali la valutazione pigra, la contextual abstraction e il design monadico.
@@ -152,9 +153,9 @@ def tokenize(input: String): LazyList[Token] =
         case Some(validToken) =>
           Some(validToken -> cursor.advance(validToken.lexeme))
         case None =>
-            val errorChar = input.charAt(cursor.offset).toString
-            val errorToken = Token.Error(errorChar, cursor.pos)
-            Some(errorToken -> cursor.advance(errorChar))
+          val errorChar = input.charAt(cursor.offset).toString
+          val errorToken = Token.Error(errorChar, cursor.pos)
+          Some(errorToken -> cursor.advance(errorChar))
   LazyList.unfold(Cursor(0, Position(1, 1)))(nextValid)
 ```
 
@@ -175,11 +176,22 @@ private def findLongestMatch(input: String, cursor: Cursor): Option[Token.Valid]
     .map(_._1)
 ```
 
+L'estrazione del match è delega a matchPrefixAt, 
+implementato come extension method sull'entità Terminal nel companion object Lexer. 
+Questo metodo incapsula l'interoperabilità con le espressioni regolari della libreria standard `java.util.regex.Matcher`, 
+verificando la corrispondenza esatta a partire dall'offset corrente tramite il metodo lookingAt(). 
+I risultati vengono mappati in tuple contenenti il token valido e l'indice di dichiarazione. 
+La risoluzione dei conflitti posizionali si riduce all'operazione 
+`maxByOption((token, index) => (token.lexeme.length, -index))`, 
+dove l'uso del segno negativo sull'indice garantisce che, a parità di lunghezza del lessema,
+venga selezionato il terminale dichiarato per primo.
+
 ### AstDecoder
 
 La trasformazione CST-AST richiede la composizione di operazioni dipendenti soggette a fallimento strutturale. 
 Questa problematica è stata risolta implementando il pattern architetturale delle monadi attraverso il trait AstDecoder[A].
-Il decoder espone le funzioni di ordine superiore map e flatMap che permettono di comporre decodificatori elementari in pipeline type-safe:
+Il decoder espone le funzioni di ordine superiore map e flatMap 
+che permettono di comporre decodificatori elementari in pipeline type-safe:
 
 
 
