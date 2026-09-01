@@ -16,7 +16,34 @@ Le principali scelte di design sono ricadute su:
 * **Risoluzione delle ambiguità**: La logica di longest-prefix-match e di priorità dei terminali è centralizzata in una pipeline funzionale 
   che agisce da filtro progressivo (matching delle espressioni regolari, ordinamento per lunghezza del match, fallback sull'ordine di dichiarazione).
 
-![](images/lexerClassDiagram.svg)
+![](images/lexerClassDiagram.svg)L'insieme di sincronizzazione adottato è una sovrastima di quello minimo, in quanto riunisce i
+terminali iniziali di tutti i simboli rimanenti nella sequenza anziché arrestarsi al primo che non
+possa essere vuoto. La scelta è conservativa e volontaria: nel caso peggiore l'analisi riprende
+leggermente in anticipo, segnalando un errore in più, mentre la formulazione minima richiederebbe di
+distinguere i simboli annullabili senza alcun beneficio sulla qualità delle segnalazioni.
+
+## Definizione della grammatica
+
+La grammatica in forma EBNF è l'unico ingresso che l'utilizzatore deve fornire per descrivere la sintassi del proprio linguaggio, ed è qui il punto in cui la libreria è più esposta:
+la sua forma determina quanto il requisito B2 possa considerarsi soddisfatto. La rappresentazione adottata è un _sum type_ ricorsivo, i casi cui casi corrispondono ai costrutti EBNF: 
+elemento vuoto, terminale, nonterminale, concatenazione, alternativa, opzionalità e le due forme di ripetizione. Una grammatica è dunque un albero, ed è la struttura su cui opera la visita
+ricorsiva descritta nella sezione successiva. 
+
+Le scelte di design rilevanti riguardano la forma che la definizione assume dal punto di vista di chi la scrive.
+* **Operatori EBNF come metodi di estensione.** I costrutti del _sum type_ non vengono invocati direttamente: la composizione avviene tramite operatori simbolici che ricalcano la notazione EBNF. 
+    La scelta dei simboli non è arbitraria. Poiché in Scala la precedenza di un operatore è determinata dal suo primo carattere, l'alternativa lega meno della concatenazione e ciascuno dei due è
+    associativo a sinistra.
+* **Vocabolario del DSL ristretto alla definizione.** Gli operatori di definizione sono membri protetti del tipo che l'utilizzatore estende per dichiarare la propria grammatica. Sono dunque disponibili solo all'interno della 
+    definizione e non introducono nomi nel resto del codice cliente.
+* **Valutazione lazy delle regole grammaticali.** Il corpo di una regola non viene valutato all'atto della definizione, ma conservato e valutato solo quando la grammatica viene percorsa.
+    È ciò che rende possibile definire nonterminali che si riferiscono ad altri nonterminali dichiarati successivamente o a sè stessi. 
+* **Nomi dei simboli dedotti dalla definizione.** Ogni terminale e nonterminale assume il nome dell'identificatore che lo introduce, catturato in fase di compilazione. Questo per non creare discrepanza tra nome dichiarato e nome esposto.
+* **Terminali espressi uniformemente come espressioni regolari.** Un terminale può essere dichiarato indicandone il lessema esatto oppure un'espressione regolare. Il lessema verrà comunque convertito in una espressione regolare che lo riconosce letteralmente.
+* **Ordine di dichiarazione dei terminali preservato.** Poiché l'ordine di dichiarazione ne determina la priorità, la definizione di un terminale lo registra in una collezione ordinata mantenuta dalla
+  grammatica. Si accetta consapevolmente uno stato mutabile su un tipo altrimenti immutabile: la mutazione è confinata alla fase di definizione e termina con essa.
+* **Identità dei simboli.** I simboli sono confrontati per identità dell'istanza creata dalla definizione, non per struttura. Ciò è possibile perché una grammatica è un oggetto i cui membri
+  vengono inizializzati una volta sola, e ogni simbolo attraversa immutato la conversione, la tabella di parsing e il parser. La scelta evita di dipendere dall'uguaglianza strutturale fra espressioni regolari, che l'ambiente non fornisce.
+ 
 
 ## Grammatica processata
 
@@ -103,5 +130,41 @@ Il calcolo eseguito dall'engine logico viene integrato nel sistema tramite un'at
 Durante una singola richiesta, l'engine, creato inizialmente con la sola teoria di base, viene aggiornato in base alla struttura della grammatica da elaborare.
 Viene sfruttata la funzionalità di registrazione degli oggetti, così che i risultati vengano riportati direttamente in termini di istanze ricevute in ingresso.
 Le soluzioni prodotte dall'engine vengono raccolte per popolare la tabella da restituire.
+
+## Analizzatore sintattico
+E' il filtro che converte lo stream di token in un CST, guidato dalla tabella di parsing e dal simbolo iniziale ricevuti in costruzione.
+La sua interfaccia riflette la separazione tra la fase di costruzione, che si compie una volta sola nella grammatica, e la fase di analisi, ripetibile su input diversi senza ricalcolare nulla.
+
+### Albero sintattico concreto
+Il CST è un _sum type_ con tre casi: 
+* un nodo di regola, etichettato da un nonterminale e provvisto di una sequenza ordinata di figli.
+* una foglia, etichettata dal token riconosciuto
+* un nodo di errore, che conserva l'insieme dei terminali attesi e i token scartati durante il recupero.
+
+Il nodo di errore dichiara che l'albero viene prodotto in ogni caso, anche per input malformato, e che il fallimento è un contenuto dell'albero, non un'alternativa ad esso.
+Il risultato dell'analisi è un _ product type_ che accosta l'albero all'elenco degli errori riscontrati. Su input scorretto l'albero conserva tutta la struttura riconosciuta, che è l'informazione di cui un decodificare ha bisogno.
+Viene comunque esposta un'interfaccia secondaria che riduce il risultato al primo errore.
+
+Il nodo di regola può essere unicamente da un nonterminale dichiarato dall'utilizzatore. I nonterminali ad uso interno non sono ammessi dal tipo.
+
+### Scelte di design
+* **Ricorsione al posto della pila esplicita.** L'algoritmo LL(1) è definito in termini di una pula di simboli da riconoscere. L'implementazione non la introduce: la pila è quella delle chiamate, e il riconoscimento di un simbolo e di una sequenza di simboli sono due funzioni mutuamente ricorsive.
+    La motivazione è la costruzione dell'albero, che con la ricorsione avviene naturalmente nella risalita, senza introdurre strutture dati parallele per ricomporre i nodi già chiusi.
+* **Un simbolo può produrre più nodi.** Il riconoscimento di un simbolo porta ad una sequenza di nodi, questo per rendere possibile l'appiattimento dei nonterminali ad uso interno. Un simbolo interno restituisce direttamente i propri figli, che vengono così assorbiti dal padre, mentre un nonterminale dichiarato
+    restituisce unicamente un nodo che li racchiude.
+* **Stato e accumolo degli errori come monade.** L'analisi è espressa come composizione di funzioni che ricevono lo stesso stream residuo e restituiscono un valore, lo stream rimanente e gli errori incontrati. La loro composizione propaga lo stream e concatena gli errori.
+    Si tratta della combinazione di uno stato e di un accumulatore, resa disponibile come tipo interno della libreria. L'effetto è che le funzioni di analisi si scrivono in forma dichiarativa, senza passare esplicitamente stream ed alenco errori e senza stato mutabile.
+* **Insieme di sincronizzazione come attributo ereditato.** L'insieme dei terminali su cui riprendere dopo un errore dipende dal contesto in cui il simbolo corrente è stato espanso. Viene modellato come parametro contestuale, quindi si propaga implicitamente lungo la ricorsione, e sono esplicite solo
+    le posizioni in cui viene esteso, ossia quelle in cui si entra in una sequenza e vi si aggiungono i terminali che possono iniziare i simboli rimanenti. 
+
+### Recupero degli errori
+L'analisi non viene interrotta quando nessuna transizione è applicabile. L'errore viene comunque registrato, i token in input scartati finchè non se ne incotra uno appartenente all'insieme di sincronizzazione del simbolo corrente e l'ananlisi riprende da li. 
+Se il token raggiunto non consente comunque di espandere il simbolo, questo viene abbandonato e sostituito nell'albero da un nodo di errore. Non viene mai invalidata dunque la porzione di albero già costruita.
+
+L'insieme di sincronizzazione adottato è una sovrastima di quello minimo, in quanto riunisce i terminali iniziali di tutti i simboli rimanenti nella sequenza anzichè fermarsi al primo che possa essere vuoto. La scelta è voluta, poiché nel caso peggiore l'analisi riprende leggermente in anticipo, segnalando un errore in più, mentre la configurazione minima richiederebbe di
+distinguere i simboli annullabili senza alcun grosso beneficio sulla qualità delle segnalazioni.
+
+La presenza di input residuo dopo il riconoscimente del simbolo iniziale è segnalata come errore invece che essere ignorata.  
+
 
 ## Decodifica CST-AST
