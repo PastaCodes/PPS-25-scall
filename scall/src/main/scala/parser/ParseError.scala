@@ -4,6 +4,9 @@ package parser
 import grammar.Element.TerminalOrEoi
 import lexer.{Position, Token}
 
+/** An error met during syntactical analysis. Lexical errors are reported here as well,
+ *  so that a client has a single collection to inspect.
+ */
 enum ParseError:
   case UnexpectedToken(expected: Set[TerminalOrEoi], found: Token.Valid)
   case UnexpectedEndOfInput(expected: Set[TerminalOrEoi])
@@ -13,12 +16,14 @@ enum ParseError:
 object ParseError:
 
   extension (error: ParseError)
+    /** Where in the source the error was met, or nothing when the input ended prematurely. */
     def position: Option[Position] = error match
       case UnexpectedToken(_, found) => Some(found.position)
       case UnexpectedEndOfInput(_) => None
       case LexicalError(token) => Some(token.position)
       case TrailingInput(token) => Some(token.position)
 
+    /** A description of this error, meant to be shown to the author of the analysed source. */
     def show: String = error match
       case UnexpectedToken(expected, found) =>
         s"unexpected '${found.lexeme}', expected ${listing(expected)}"

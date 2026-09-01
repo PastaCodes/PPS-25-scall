@@ -3,7 +3,7 @@ scalaVersion := "3.8.4"
 lazy val root = rootProject
   .settings(
     name := "scall-demo",
-    assembly / mainClass := Some("it.unibo.finf.demo"),
+    assembly / mainClass := Some("it.unibo.finf.run"),
   )
 
 lazy val scall = project
