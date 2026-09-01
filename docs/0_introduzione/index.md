@@ -18,3 +18,8 @@ Sono inclusi diversi esempi `.finf` utilizzabili per testare il funzionamento de
 
 La qualità della soluzione prodotta è determinata innanzitutto dalle caratteristiche della libreria in quanto tale, ossia in termini di utilità e utilizzabilità.
 Il sottoprogetto FINF fornisce una base concreta su cui valutare la completezza delle funzionalità fornite e l'efficacia con cui possono essere applicate.
+
+---
+
+[Indice](../index.md) |
+[Capitolo successivo](../1_processo_di_sviluppo/index.md)

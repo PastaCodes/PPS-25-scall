@@ -560,3 +560,9 @@ La for-comprehension coordina l'estrazione ricorsiva sfruttando l'extension meth
 Dato che l'AstDecoder opera come una monade su Either, 
 la sequenza propaga automaticamente lo short-circuiting al primo fallimento su un sotto-nodo, 
 garantendo costruzioni strettamente tipizzate e sicure.
+
+---
+
+[Indice](../index.md) |
+[Capitolo precedente](../4_design_di_dettaglio/index.md) |
+[Capitolo successivo](../6_testing/index.md)

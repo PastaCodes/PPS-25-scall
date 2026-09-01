@@ -42,3 +42,9 @@ test("oneOrMore is processed by concatenating repetition to all alternatives"):
       Seq(s2, r2: InternalNonterminal)
     ) if Set(s1, s2) == Set(a, b) && r1 == r2 =>
 ```
+
+---
+
+[Indice](../index.md) |
+[Capitolo precedente](../5_implementazione/index.md) |
+[Capitolo successivo](../7_retrospettiva/index.md)

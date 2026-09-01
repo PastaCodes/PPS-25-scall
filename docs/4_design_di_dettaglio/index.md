@@ -267,3 +267,9 @@ il modulo di decodifica espone due strategie complementari:
   Per superare i limiti dello short-circuiting nativo, il design espone un costrutto dedicato che forza la valutazione dell'intera collezione, intercettando ogni singola anomalia. 
   I molteplici fallimenti vengono quindi consolidati strutturalmente attraverso il pattern Composite `AggregateError`, 
   permettendo al sistema di restituire un report diagnostico simultaneo ed esaustivo (FS26).
+
+---
+
+[Indice](../index.md) |
+[Capitolo precedente](../3_design_architetturale/index.md) |
+[Capitolo successivo](../5_implementazione/index.md)

@@ -34,3 +34,8 @@ Questo approccio agevola lo sviluppo contemporaneo da parte di più persone.
 * Sbt
 * Git
 
+---
+
+[Indice](../index.md) |
+[Capitolo precedente](../0_introduzione/index.md) |
+[Capitolo successivo](../2_requirement_specification/index.md)

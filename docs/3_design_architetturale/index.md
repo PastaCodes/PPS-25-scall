@@ -17,3 +17,9 @@ in quanto richiede trasformazioni di dati ordinati e sequenziali.
 
 Per via della forte separazione fra le varie componenti del sistema, il design architetturale resta molto semplice.
 La maggior parte delle scelte di design ricade nell'organizzazione interna delle singole parti.
+
+---
+
+[Indice](../index.md) |
+[Capitolo precedente](../2_requirement_specification/index.md) |
+[Capitolo successivo](../4_design_di_dettaglio/index.md)

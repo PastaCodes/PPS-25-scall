@@ -136,3 +136,9 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 | I2 | Il sistema deve essere sviluppato primariamente in Scala 3, utilizzando sbt come build system.                                                |                                                                                  |
 | I3 | Il sistema deve essere testato durante l'intero processo di sviluppo utilizzando la libreria ScalaTest.                                       | Viene adottato l'approccio TDD.                                                  |
 | I4 | Gli elementi più formali del sistema devono essere sviluppati in Prolog e integrati nell'ambiente Scala attraverso la libreria TuProlog Core. |                                                                                  |
+
+---
+
+[Indice](../index.md) |
+[Capitolo precedente](../1_processo_di_sviluppo/index.md) |
+[Capitolo successivo](../3_design_architetturale/index.md)

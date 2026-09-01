@@ -62,3 +62,8 @@ ha fatto nascere col tempo opinioni differenti.
 <br>
 Infine, per quanto riguarda la programmazione logica, è risultata essere una challenge stimolante,
 penalizzata soltanto dalla libreria difficilmente utilizzabile.
+
+---
+
+[Indice](../index.md) |
+[Capitolo precedente](../6_testing/index.md)
