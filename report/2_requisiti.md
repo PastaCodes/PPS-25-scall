@@ -116,8 +116,6 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 | FS24 | In caso di incongruenze durante la decodifica CST-AST, il sistema deve propagare il fallimento arricchendo l'errore con le coordinate spaziali del nodo responsabile.                                                                                                                                        |
 | FS24 | Il caso d'uso FINF deve basarsi su una grammatica che metta in evidenza tutte le funzionalità principali della libreria.                                                                                                                                                                                     |
 
-// TODO: mettere gli id quando ci sono tutti
-
 ## Requisiti non funzionali
 
 | ID  | Testo del requisito                                                                                                                                               | Criterio di accettazione                                                                                                                      |
