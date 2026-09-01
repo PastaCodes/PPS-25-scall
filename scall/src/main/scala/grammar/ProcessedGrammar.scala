@@ -42,10 +42,7 @@ object ProcessedGrammar:
     val res = visit(startSymbol)
     ProcessedGrammar(startSymbol, g.terminals, res.productions)
   
-  def visit(e: Element, skipNonterminals: Set[Nonterminal] = Set.empty): VisitResult =
-    given Set[Nonterminal] = skipNonterminals
-    
-    e match
+  def visit(e: Element)(using skip: Set[Nonterminal] = Set.empty): VisitResult = e match
 
       case Eps =>
         VisitResult(Alternatives.ofEps)
@@ -54,12 +51,12 @@ object ProcessedGrammar:
         VisitResult(Alternatives.ofSymbol(s))
       
       case s: Nonterminal =>
-        if !skipNonterminals.contains(s) then
+        if !skip(s) then
           visitUnary(s.rule())(
             alternativesFn      = _ => Alternatives.ofSymbol(s),
             addNonterminals     = Set(s),
             addProductionsFn    = v => Productions.ofNonterminal(s, v.alternatives)
-          )(using skipNonterminals = skipNonterminals incl s)
+          )(using skip incl s)
         else
           VisitResult(Alternatives.ofSymbol(s))
       
@@ -97,8 +94,8 @@ object ProcessedGrammar:
                          addTerminals: Set[Terminal] = Set.empty,
                          addNonterminals: Set[Nonterminal] = Set.empty,
                          addProductionsFn: VisitResult => Productions = _ => Map.empty)
-                        (using skipNonterminals: Set[Nonterminal]): VisitResult =
-    val v = ProcessedGrammar.visit(t, skipNonterminals)
+                        (using skip: Set[Nonterminal]): VisitResult =
+    val v = ProcessedGrammar.visit(t)
     VisitResult(
       alternativesFn(v),
       v.nonterminals union addNonterminals,
@@ -107,9 +104,9 @@ object ProcessedGrammar:
   
   private def visitBinary(t1: Element, t2: Element)
                          (alternativesFn: (VisitResult, VisitResult) => Alternatives)
-                         (using skipNonterminals: Set[Nonterminal]): VisitResult =
-    val v1 = ProcessedGrammar.visit(t1, skipNonterminals)
-    val v2 = ProcessedGrammar.visit(t2, skipNonterminals union v1.nonterminals)
+                         (using skip: Set[Nonterminal]): VisitResult =
+    val v1 = ProcessedGrammar.visit(t1)(using skip)
+    val v2 = ProcessedGrammar.visit(t2)(using skip union v1.nonterminals)
     VisitResult(
       alternativesFn(v1, v2),
       v1.nonterminals union v2.nonterminals,

@@ -33,22 +33,20 @@ object ParsingTable:
    *  If the supplied grammar is not LL(1), the result is undefined.
    */
   def compute(grammar: ProcessedGrammar): ParsingTable =
-    given ProcessedGrammar = grammar
     registerScope:
-      withKnowledge(grammarKnowledge): () =>
+      withKnowledge(grammarKnowledge(grammar)): () =>
         val X = variable("X"); val A = variable("A"); val B = variable("B")
-        val parseTableGoal = compoundTerm("parsing_cell", X, A, B)
-        parseTableGoal.solveAll.collectSuccess { s => (
-          (
-            s.getRegistered[AnyNonterminal](X),
-            s.get(A):
-              case RegisteredTerminal(t) => t
-              case Int(1) => Eoi
-          ),
-          s.getRegisteredList[AnySymbol](B)
-        )}.toMap
+        val parsingTableGoal = compoundTerm("parsing_table_cell", X, A, B)
+        parsingTableGoal.solveAll.collectSuccess: s =>
+          val row = s.getRegistered[AnyNonterminal](X)
+          val col = s.get(A):
+            case Registered[Terminal](t) => t
+            case Int(1) => Eoi
+          val value = s.getRegisteredList[AnySymbol](B)
+          (row, col) -> value
+        .toMap
 
-  private def grammarKnowledge(using g: ProcessedGrammar, scope: RegisterScope) =
+  private def grammarKnowledge(g: ProcessedGrammar)(using scope: RegisterScope) =
     import scala.language.implicitConversions
     given TermConversion[AnySymbol] = register
     val t = g.terminals.filter(!_.isSkipped).map: t =>
@@ -57,7 +55,3 @@ object ParsingTable:
       compoundTerm("production", head, body)
     val s = compoundTerm("start_symbol", g.startSymbol)
     t ++ p :+ s
-
-  private object RegisteredTerminal:
-    def unapply(t: alice.tuprolog.Term)(using scope: RegisterScope): Option[Terminal] =
-      Registered.unapply(t)
