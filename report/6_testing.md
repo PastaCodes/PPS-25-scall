@@ -10,12 +10,27 @@ Inoltre fornisce dei costrutti a supporto della scrittura di codice, come un DSL
 per la realizzazione di test esplicativi e facilmente leggibili.
 Questo consente inoltre di capire il funzionamento dell'implementazione a monte semplicemente osservando i test.
 
+### Esempi rilevanti
+
+Questi esempi mostrano come le tecniche descritte sopra siano state applicate nel concreto all'interno del progetto.
+
+
+```scala
+test("Lexer should return empty seq for empty string"):
+  emptyLexer.tokenize("").toList shouldBe empty
+
+test("Lexer recognize string"):
+  val tokens = basicLexer.tokenize("if").toList
+  tokens.collect { case Token.Valid(t, _, _) => t } shouldBe List(BasicGrammar.ifRule)
+  tokens.map(_.lexeme) shouldBe List("if")
+
+test("Lexer implements longest-prefix-match"):
+  val tokens = basicLexer.tokenize("iffy").toList
+  tokens.map(_.lexeme) shouldBe List("iffy")
+  tokens.collect { case Token.Valid(t, _, _) => t } shouldBe List(BasicGrammar.idRule)
+```
+
 ---
-
-Metodologia usata: TDD, Red-Green-Refactor (RGR)
-
-Tecnologie usate: ScalaTest
 
 Grado di copertura: Unit test + Componenti robuste (?) + demo eseguibile
 
-Esempi rilevanti: divertiti
