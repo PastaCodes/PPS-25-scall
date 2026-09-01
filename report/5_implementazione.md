@@ -228,18 +228,18 @@ val COMMENT = -> ("""/\*.*?\*/""".r, skip = true)
 
 ## Merighi Daniele
 
-File prodotti: `grammar/Element`, `grammar/Grammar`, `parser/Parser`, `parser/Parsing`, `parser/ParseError`, `Demo`.
+File prodotti: `grammar/Element`, `grammar/Grammar`, `parser/Parser`, `parser/Parsing`, `parser/ParseError`, `Demo`, `ScaLL`.
 
 Test prodotti: `grammar/GrammarTest`, `parser/ParserTest`, `parser/ParsingTest`.
 
 Il mio contributo si è basato sui costrutti del DSL con cui l'utilizzatore descrive la propria grammatica e sull'algoritmo di parsing LL(1), comprensivo della costruzione del CST e del recupero degli errori.
-In aggiunto, la demo a riga di comando mostra il montaggio completo della pipeline dal punto di vista di chi utilizza la libreria. 
+In aggiunta, la demo a riga di comando mostra il montaggio completo della pipeline dal punto di vista di chi utilizza la libreria. 
 
 ### Costrutti del DSL
 La definizione di una grammatica avviene estendendo il tipo `Grammar`, che espone come membri protetti le due varianti dell'operatore `->`.
-Entrambe ricevono in modo contestuale il nome dell'identificatore che le invoca, catturato in fase di compilazione della libreria `sourcecode`: l'utilizzatore non ripete mai il nome del simbolo come stringa. 
+Entrambe ricevono in modo contestuale il nome dell'identificatore che le invoca, catturato in fase di compilazione dalla libreria `sourcecode`: l'utilizzatore non ripete mai il nome del simbolo come stringa. 
 La variante per i nonterminali riceve il corpo della regola _by-name_ e lo conserva come funzione, rimandandone la valutazione al momento in cui la grammatica verrà percorsa.
-La variante per i terminali uniforma stringhe ed espressioni regolari a queste utlime e registra il terminale nella collezione ordinata mantenuta dalla grammatica.
+La variante per i terminali uniforma stringhe ed espressioni regolari a queste ultime e registra il terminale nella collezione ordinata mantenuta dalla grammatica.
 ```scala
 open class Grammar:
   private var _terminals = Vector.empty[Terminal]
@@ -253,9 +253,8 @@ open class Grammar:
       case r: Regex  => r
     register(Terminal(name.value, regex, skip))
 ```
-Gli operatori EBNF sono metodi di estensione su `Element`, i cui casi corrispondono uno a uno ai costrutti della notazione. 
-La scelta dei simboli non è casuale: poiché in Scala la precedenza di un operatore dipende dal suo primo carattere `|` lega meno di `++` ed entrambi sono associativi a sinistra.
-Un'espressione come `a ++ b | c ++ d` viene quindi letta come `(a ++ b) | (c ++ d)`, che è esattamente la semantica EBNF senza bisogno di parentesi.
+Gli operatori EBNF sono metodi di estensione su `Element`, i cui casi corrispondono uno a uno ai costrutti della notazione.
+La precedenza degli operatori, discussa in fase di design, si traduce in pratica così: `a ++ b | c ++ d` viene letta come `(a ++ b) | (c ++ d)`, senza parentesi e con la stessa semantica dell'EBNF.
 ```scala
 extension (element: Element)
   def ++(other: Element): Concat = Concat(element, other)
@@ -274,7 +273,7 @@ Il metodo `show` ricostruisce la notazione EBNF a partire dall'albero, delegando
 
 ### Parser LL(1)
 L'algoritmo in fase di design è definito in termini di una pila di simboli da riconoscere.
-L'implementazione non la usa: il ruolo della pila è ricoperto dalle chiamate ricorsive di `parseSymbol` e `parseSequence`, così che la costruzione dell'albero avvenga naturalmente nella risalita.
+La pila prevista dall'algoritmo è quella delle chiamate: `parseSymbol` e `parseSequence` sono mutuamente ricorsive.
 Il metodo `expand` concentra l'intero contenuto nella tabella di transizione, restituendo `None` quando nessuna mossa è applicabile.
 Questa scelta di tipo rende il flusso di recupero una semplice alternativa al caso nominale, espressa da `getOrElse`, e non un ramo di controllo separato.
 ```scala
@@ -298,18 +297,87 @@ private def expand(symbol: AnySymbol, next: Option[Token.Valid])(using Sync): Op
     case _ => None
 ```
 Si osservi che il riconoscimento di un simbolo produce una sequenza di nodi e non un singolo nodo.
-È questa firma a realizzare l'appiattimento dei non terminali ad uso interno previsto in fase di design: un simbolo interno restituisce 
-direttamente i propri figli, che il chiamante concatena ai fratelli, mentre un nonterminale dichiarato restituisce l'unico nodo che li racchiude. 
-L'appiattimento non richiede quindi alcuna elaborazione successiva.
+L'appiattimento previsto dal design è interamente contenuto in `nodesFor`, che sfrutta la firma a sequenza: non esiste una fase successiva che ripulisca l'albero.
 ```scala
 private def nodesFor(nonterminal: AnyNonterminal, children: Seq[CSTNode]): Seq[CSTNode] =
   nonterminal match
     case rule: Nonterminal => Seq(RuleNode(rule, children))
     case _: InternalNonterminal => children
 ```
-### Monade di Parsing
+### Monade di parsing
+L'analisi deve propagare lo stream residuo e accumulare gli errori durante l'intera ricorsione. 
+Anziché passare esplicitamente entrambi in ogni firma, si introduce il tipo `Parsing`, una funzione dallo stream residuo a un risultato che ne riporta il valore prodotto, lo stream rimanente e gli errori incontrati. 
+La sua `flatMap` inoltra lo stream dal primo passo al secondo e concatena gli errori.
+```scala
+private case class Step[A](value: A, rest: LazyList[Token], errors: Seq[ParseError])
 
+private case class Parsing[A](run: LazyList[Token] => Step[A]):
+  def flatMap[B](next: A => Parsing[B]): Parsing[B] = Parsing: tokens =>
+    val step = run(tokens)
+    val continuation = next(step.value).run(step.rest)
+    continuation.copy(errors = step.errors concat continuation.errors)
 
+  def map[B](f: A => B): Parsing[B] = flatMap(value => pure(f(value)))
+  infix def andThen[B](second: => Parsing[B]): Parsing[B] = flatMap(_ => second)
+
+private object Parsing:
+  def pure[A](value: A): Parsing[A] = Parsing(Step(value, _, Seq.empty))
+  def record(error: ParseError): Parsing[Unit] = Parsing(Step((), _, Seq(error)))
+  def peek: Parsing[Option[Token]] = Parsing(tokens => Step(tokens.headOption, tokens, Seq.empty))
+  def advance: Parsing[Unit] = Parsing(tokens => Step((), tokens.drop(1), Seq.empty))
+```
+Le quattro operazioni primitive sono le sole a costruire direttamente uno `Step`. Ogni altro metodo del parser le esprime componendole, tramite for-comprehension o `andThen` quando il valore intermedio non è rilevante.
+
+### Recupero e segnalazione degli errori
+L'insieme di sincronizzazione dipende dal contesto in cui il simbolo corrente è stato espanso ed è quindi un attributo ereditato.
+Il parametro contestuale previsto dal design è dichiarato `using sync: Sync` e ricompare esplicitamente in un punto solo, `parseSequence`, dove viene esteso con i terminali iniziali dei simboli rimanenti.
+```scala
+private def parseSequence(symbols: SymbolSeq)(using sync: Sync): Parsing[Seq[CSTNode]] =
+  symbols match
+    case Seq() => pure(Seq.empty)
+    case symbol +: rest =>
+      for
+        node <- parseSymbol(symbol)(using sync union rest.starters)
+        others <- parseSequence(rest)
+      yield node ++ others
+
+extension (symbol: AnySymbol)
+  private def starters: Sync = symbol match
+    case terminal: Terminal => Set(terminal)
+    case nonterminal: AnyNonterminal =>
+      table.keys.collect { case (`nonterminal`, terminal) => terminal }.toSet
+```
+I terminali iniziali di un simbolo non vengono ricalcolati, ma letti dalle chiavi della tabella di parsing già costruita: una cella è definita esattamente per i terminali per cui quel simbolo può cominciare.
+
+Lo scarto dei token e l'assorbimento degli errori lessicali sono due ricorsioni distinti sulla medesima primitiva. In particolare `lookahead` non restituisce mai un token di errore: lo registra, lo scarta e riprova, così che il resto del parser possa ragionare unicamente su token validi.
+```scala
+private def lookahead: Parsing[Option[Token.Valid]] =
+  peek.flatMap:
+    case Some(error: Token.Error) => record(LexicalError(error)) andThen advance andThen lookahead
+    case next => pure(next.collect { case valid: Token.Valid => valid })
+
+private def skipUntil(resume: Sync): Parsing[Seq[Token.Valid]] =
+  lookahead.flatMap:
+    case Some(token) if !resume.contains(token.terminal) =>
+      advance andThen skipUntil(resume).map(token +: _)
+    case _ => pure(Seq.empty)
+```
+### Analizzatore e demo
+La demo a riga di comando analizza uno o più file `.finf` e ne riporta l'esito.
+Non monta la pipeline, la richiede alla libreria sotto forma di analizzatore, costruito una sola volta e riutilizzato per ciascun file.
+```scala
+type Analyzer[A] = String => AnalysisReport[A]
+
+def analyzer[A](grammar: Grammar, startSymbol: Nonterminal)(using decoder: AstDecoder[A]): Analyzer[A] =
+  val lexer = Lexer(grammar.terminals)
+  val processed = ProcessedGrammar.of(grammar, startSymbol)
+  val table = ParsingTable.compute(processed)
+  val parser = Parser(table, startSymbol)
+  input =>
+    val tokens = lexer.tokenize(input)
+    val ParseReport(parseTree, parseErrors) = parser.parseAll(tokens)
+    AnalysisReport(parseTree, parseErrors)
+```
 ## Turchi Jacopo
 
 File prodotti: `lexer/Lexer`, `lexer/Position`, `lexer/Token`, `ast/AstDecoder`, `ast/AstError`, `ast/CSTNode`, `ast/TypedExtractors`, `finf/ast/FinfNode`, `finf/ast/FinfDecoder`.
