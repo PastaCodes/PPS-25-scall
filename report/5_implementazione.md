@@ -230,7 +230,7 @@ val COMMENT = -> ("""/\*.*?\*/""".r, skip = true)
 
 File prodotti: `grammar/Element`, `grammar/Grammar`, `parser/Parser`, `parser/Parsing`, `parser/ParseError`, `Demo`, `ScaLL`.
 
-Test prodotti: `grammar/GrammarTest`, `parser/ParserTest`, `parser/ParsingTest`.
+Test prodotti: `grammar/GrammarTest`, `parser/ParserTest`, `parser/ParsingTest`, `PipelineTes`.
 
 Il mio contributo si è basato sui costrutti del DSL con cui l'utilizzatore descrive la propria grammatica e sull'algoritmo di parsing LL(1), comprensivo della costruzione del CST e del recupero degli errori.
 In aggiunta, la demo a riga di comando mostra il montaggio completo della pipeline dal punto di vista di chi utilizza la libreria. 
