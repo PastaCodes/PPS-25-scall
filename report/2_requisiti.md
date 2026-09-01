@@ -83,6 +83,7 @@ riprendere, ossia appartenente all'insieme di sincronizzazione del simbolo corre
 | FU8  | L'utilizzatore deve poter ottenere un parser da una tabella di parsing e un simbolo iniziale, e da esso il CST di uno stream di token.                                                                                                       |
 | FU9  | L'utilizzatore deve ricevere l'elenco completo degli errori riscontrati in una singola analisi, e non solo il primo, ciascuno corredato della posizione nel sorgente e dei terminali che sarebbero stati ammissibili                         |
 | FU10 | Il CST restituito deve contenere unicamente i nonterminali dichiarati dall'utilizzatore.                                                                                                                                                     |
+| FU11 | L'utilizzatore deve poter raggruppare e incatenare regole di decodifica alternative in modo dichiarativo, gestendo agilmente le produzioni grammaticali che presentano molteplici possibilità logiche.                                       |
 
 ### Sistema
 
@@ -113,8 +114,11 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 | FS21 | Il sistema deve riportare fra gli errori dell'analisi sintattica anche quelli prodotti dall'analisi lessicale e l'eventuale input residuo successivo al riconoscimento del simbolo iniziale.                                                                                                                 | 
 | FS22 | Il sistema deve fornire un meccanismo di costruzione di una tabella di parsing a partire da una grammatica in forma CFG pura, secondo le specifiche dell'algoritmo LL(1). Nel caso di una grammatica non LL(1) il comportamento non è definito.                                                              |
 | FS23 | Il sistema deve fornire un meccanismo di decodifica per elaborare iterativamente un albero sintattico concreto (CST) estraendone gli elementi utili alla costruzione dell'albero astratto (AST).                                                                                                             |
-| FS24 | In caso di incongruenze durante la decodifica CST-AST, il sistema deve propagare il fallimento arricchendo l'errore con le coordinate spaziali del nodo responsabile.                                                                                                                                        |
-| FS24 | Il caso d'uso FINF deve basarsi su una grammatica che metta in evidenza tutte le funzionalità principali della libreria.                                                                                                                                                                                     |
+| FS24 | Il meccanismo di decodifica CST-AST deve garantire l'assenza di eccezioni a runtime lanciate dalla libreria durante il processo di navigazione e conversione, restituendo il risultato del calcolo incapsulato in un tipo disgiuntivo.                                                                       |
+| FS25 | Durante l'attraversamento di strutture CST strettamente consequenziali e interdipendenti, il sistema deve interrompere immediatamente il processo di decodifica (comportamento fail-fast) al primo errore riscontrato, al fine di prevenire propagazioni di stati inconsistenti a valle.                     |
+| FS26 | Il meccanismo di decodifica CST-AST deve supportare la generazione di errori compositi, permettendo di raggruppare fallimenti indipendenti generati in rami paralleli dell'albero, al fine di supportare diagnostiche cumulative.                                                                            |
+| FS27 | Il meccanismo di decodifica CST-AST deve isolare le discrepanze strutturali rispetto a quanto definito dall'utilizzatore, intercettando e tracciando l'elemento inatteso e conservando la differenza formale tra la struttura trovata nel CST e la struttura che le regole di decodifica si aspettavano.     |
+| FS28 | Il caso d'uso FINF deve basarsi su una grammatica che metta in evidenza tutte le funzionalità principali della libreria.                                                                                                                                                                                     |
 
 ## Requisiti non funzionali
 
