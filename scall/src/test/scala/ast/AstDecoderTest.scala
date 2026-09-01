@@ -16,9 +16,9 @@ object DecoderTestFixtures:
   case class BinaryOp(op: String, left: Expr, right: Expr) extends Expr
   case class Block(statements: Seq[Expr]) extends Expr
 
-  val idTerminal: Terminal = Terminal("ID", "[a-zA-Z0-9+*-]+".r)
-  val numTerminal: Terminal = Terminal("NUM", "[a-zA-Z0-9+*-]+".r)
-  val opTerminal: Terminal = Terminal("OP", "[a-zA-Z0-9+*-]+".r)
+  val idTerminal: Terminal = Terminal("ID", "[a-zA-Z]+".r)
+  val numTerminal: Terminal = Terminal("NUM", "-?[0-9]+".r)
+  val opTerminal: Terminal = Terminal("OP", "[+*-/]".r)
   val binaryExprRule: Nonterminal = Nonterminal("binary_expr", () => null)
   val blockRule: Nonterminal = Nonterminal("block", () => null)
 
