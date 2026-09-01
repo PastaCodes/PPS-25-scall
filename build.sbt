@@ -6,7 +6,7 @@ lazy val root = rootProject
     name := "scall-demo",
     ThisBuild / version := "1.0.0",
     ThisBuild / organization := "it.unibo",
-    assembly / mainClass := Some("it.unibo.finf.run"),
+    Compile / mainClass := Some("it.unibo.finf.run"),
   )
 
 lazy val scall = project
