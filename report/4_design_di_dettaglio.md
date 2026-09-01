@@ -34,10 +34,10 @@ Le scelte di design rilevanti riguardano la forma che la definizione assume dal 
 
 ![](images/detailed_design_processed_grammar_class.svg)
 
-Volendo rappresentare il risultato della conversione da grammatica EBNF a CFG pura, si introduce il concetto di grammatica processata (`ProcessedGrammar`), un _product type_ composto da un simbolo di partenza, una collezione di terminali e una collezione di produzioni, come espresso dai requisiti.
+Volendo rappresentare il risultato della conversione da grammatica EBNF a CFG pura, si introduce il concetto di grammatica processata (`ProcessedGrammar`), un _product type_ composto da un simbolo di partenza, una collezione di terminali e una collezione di produzioni, come espresso dal requisito FS3.
 Anche in questo caso, le priorità dei terminali vengono espresse dal loro ordinamento.
 
-Si introduce il concetto di simbolo nonterminale ad uso interno (`InternalNonterminal`), che può essere utilizzato dagli operatori di ripetizione e dall'algoritmo di left factoring automatico.
+Si introduce il concetto di simbolo nonterminale ad uso interno (`InternalNonterminal`), previsto dal requisito FS6, che può essere utilizzato dagli operatori di ripetizione e dall'algoritmo di left factoring automatico.
 Questi nonterminali sono distinti da quelli definiti dalla grammatica di partenza, in quanto:
 * Non hanno una regola (EBNF) che li definisca.
 * Non hanno un nome definito dall'utilizzatore. In fase di implementazione verrà aggiunto un nome ad uso interno.
@@ -53,7 +53,7 @@ A questo punto, le produzioni sono rappresentate dall'associazione di un nonterm
 
 ![](images/detailed_design_processed_grammar_activity.svg)
 
-Data la struttura ad albero della grammatica EBNF in ingresso, il processo di conversione avviene attraverso una visita ricorsiva ispirata al _visitor pattern_, seppure in chiave funzionale.
+Data la struttura ad albero della grammatica EBNF in ingresso, il processo di conversione (richiesto da FS4) avviene attraverso una visita ricorsiva ispirata al _visitor pattern_, seppure in chiave funzionale.
 La visita comincia a partire dal simbolo iniziale fornito ed esplora automaticamente tutti i simboli raggiungibili da esso.
 Ogni chiamata restituisce un risultato intermedio e si occupa di combinare i risultati prodotti dagli eventuali nodi figli, oltre alle proprie informazioni.
 A seconda che l'elemento attuale sia una foglia, un operatore unario, o un operatore binario, il numero di chiamate ricorsive varia da zero a due, una per ciascun nodo figlio.
@@ -64,7 +64,7 @@ Limitatamente a questa fase interna, si fa riferimento alle "alternative" come l
 Si osservi che visitare lo stesso elemento più volte non produce mai nuove informazioni.
 
 Il calcolo delle alternative ed eventuali produzioni generate varia a seconda dello specifico tipo di elemento.
-Fra le possibili conversioni che producono una grammatica fattorizzata a sinistra equivalente, si adotta la seguente:
+Fra le possibili conversioni che producono una grammatica fattorizzata a sinistra (FS8) ed equivalente (FS7), si adotta la seguente:
 
 * Elemento vuoto:&ensp;$\mathrm{ALT}(\varepsilon)=\lbrace\, \varepsilon \,\rbrace$,&ensp;$\mathrm{PROD}(\varepsilon)=\emptyset$.
 * Terminale:&ensp;$\mathrm{ALT}(b)=\lbrace\, b \,\rbrace$,&ensp;$\mathrm{PROD}(b)=\emptyset$.
@@ -90,12 +90,12 @@ La ricorsione si interrompe per le alternative che non hanno prefissi in comune 
 
 ![](images/detailed_design_parsing_table_class.svg)
 
-La rappresentazione di tabelle di parsing segue dai vincoli di dominio.
+La rappresentazione di tabelle di parsing segue dai vincoli di dominio espressi dal requisito FS16.
 Viene introdotto l'oggetto `Eoi` per indicare l'esaurimento dell'input, così che possa apparire come colonna nella tabella, insieme ai terminali della grammatica.
 
 ### Costruzione
 
-La costruzione è definita da regole formali, per questo motivo si opta per un'implementazione in programmazione logica.
+La costruzione è definita da regole formali (vedi FS22), per questo motivo si opta per un'implementazione in programmazione logica (vedi I4).
 Poiché questa scelta impatta drasticamente sulla struttura di una parte significativa del sistema, la si considera una decisione di design.
 Altri elementi del dominio potrebbero essere espressi in termini di programmazione logica, ma, nel rispetto del requisito I2, si limita l'applicazione a questo solo sottoproblema.
 
