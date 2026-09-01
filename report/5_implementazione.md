@@ -399,7 +399,7 @@ given declDecoder: AstDecoder[Declaration] with
 
 Come si osserva, il matching su `valueDeclaration` cattura selettivamente solo i nodi semanticamente rilevanti, 
 ignorando token sintattici e punteggiatura grazie all'uso dei placeholder _ sui terminali (es. VAL(_), COLON(_)). 
-La for-comprehension coordina l'estrazione ricorsiva sfruttando l'extension method .as[T]. 
+La for-comprehension coordina l'estrazione ricorsiva sfruttando l'extension method `.as[T]`. 
 Dato che l'AstDecoder opera come una monade su Either, 
 la sequenza propaga automaticamente lo short-circuiting al primo fallimento su un sotto-nodo, 
 garantendo costruzioni strettamente tipizzate e sicure.
