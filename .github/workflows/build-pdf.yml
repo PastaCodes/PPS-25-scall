@@ -16,7 +16,7 @@ jobs:
 
       - name: Build PDF
         run: |
-          cd report
+          cd docs
           pandoc [0-9]*-*/index.md \
             -f markdown-implicit_figures \
             --resource-path=$(echo [0-9]*-* | tr ' ' ':') \
