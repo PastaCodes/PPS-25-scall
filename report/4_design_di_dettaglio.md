@@ -121,16 +121,16 @@ pertanto si prevede che in fase di implementazione emerga la necessità di uno s
 
 L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale. 
 Il suo scopo è la conversione della stringa di input in una sequenza di token, 
-ciascuno associato a un simbolo terminale, mantenendo traccia delle coordinate spaziali 
-calcolate in base alla posizione nel testo originale.
+ciascuno associato a un simbolo terminale (vedi FS10), mantenendo traccia delle coordinate spaziali 
+calcolate in base alla posizione nel testo originale (FS15).
 
 Le principali scelte di design sono ricadute su:
 
 * **Immutabilità e incapsulamento dello stato (Cursor)**: Per supportare l'iterazione sull'input mantenendo l'assenza di side-effect, 
-  il tracciamento spaziale (offset, riga, colonna) è incapsulato in un'entità privata Cursor. 
+  il tracciamento spaziale (offset, riga, colonna) è incapsulato in un'entità privata Cursor (FS15). 
   Ad ogni match, il lexer non muta puntatori globali, ma genera una nuova istanza di Cursor tramite il metodo `advance`, garantendo la purezza funzionale dell'avanzamento.
 
-* **Gestione funzionale degli errori e ADT**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi, 
+* **Gestione funzionale degli errori e ADT**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi (FS14), 
   il design esclude il lancio di eccezioni in fase lessicale. 
   Il tipo di ritorno è modellato come enum type `Token`, permettendo di istanziare ValidToken per i match corretti o di isolare il carattere invalido in uno specifico ErrorToken, 
   incapsulando il fallimento per consentire l'analisi del resto dell'input.
@@ -144,17 +144,17 @@ Sia $p_t$ il prefisso di $S$ che verifica la regola associata al terminale $t \i
 $M = \lbrace\, (t, p_t) \;\vert{}\; p_t \text{ è un prefisso valido di } S \,\rbrace$
 
 Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategie di filtraggio:
-* **Maximal match (Longest-prefix-match)**: Il sistema seleziona il sottoinsieme $M_{max} \subseteq M$ che massimizza la lunghezza del prefisso riconosciuto. Ovvero:
+* **Maximal match (Longest-prefix-match)**: Il sistema seleziona il sottoinsieme $M_{max} \subseteq M$ che massimizza la lunghezza del prefisso riconosciuto (FS11). Ovvero:
   $M_{max} = \lbrace\, (t, p_t) \in M \;\vert{}\; \vert{}p_t\vert{} = \max_{(x, p_x) \in M} \vert{}p_x\vert{} \,\rbrace$
 * **Fallback posizionale (Priorità)**: Se $\vert{}M_{max}\vert{} > 1$, si verifica una collisione fra terminali che riconoscono la medesima porzione di testo
   (ad esempio, una parola chiave come if che fa match sia col terminale IF che col terminale generico ID).
-  Il sistema risolve il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica.
+  Il sistema risolve il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica (FS12).
   Definendo $idx(t)$ come l'indice di dichiarazione del terminale $t$, si estrae l'unico vincitore $(t^*, p_{t^*})$ tale che $idx(t^*)$ sia minimo.
 * **Scarto dei terminali ignorabili**: Se il terminale vincitore $t^*$ è esplicitamente marcato come ignorabile (es. spaziature o commenti),
-  il prefisso $p_{t^*}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output.
+  il prefisso $p_{t^*}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output (FS13).
 * **Error fallback**: Nel caso limite in cui l'insieme dei match validi sia vuoto ($M = \emptyset$), il sistema non riconosce alcun prefisso.
   Per evitare stalli e proseguire l'analisi, il lexer consuma esattamente il primo carattere di $S$,
-  lo incapsula in un ErrorToken tracciandone la posizione originaria, e riprende l'algoritmo sul resto della stringa.
+  lo incapsula in un ErrorToken tracciandone la posizione originaria, e riprende l'algoritmo sul resto della stringa (FS14).
 
 ## Analizzatore sintattico
 È il filtro che converte lo stream di token in un CST, guidato dalla tabella di parsing e dal simbolo iniziale ricevuti in costruzione.
@@ -199,7 +199,7 @@ La presenza di input residuo dopo il riconoscimento del simbolo iniziale è segn
 ## Decodifica CST-AST
 
 Il processo di decodifica trasforma l'albero sintattico concreto (CST), generato dal parser,
-nell'albero sintattico astratto (AST) specifico per il dominio dell'utente.
+nell'albero sintattico astratto (AST) specifico per il dominio dell'utente (vedi FS23 e FU2).
 Poiché la forma del CST è strettamente vincolata alle regole di derivazione della grammatica formale,
 il design necessita di disaccoppiare la visita dalla logica di costruzione dei nodi finali.
 
@@ -222,10 +222,10 @@ Per evitare all'utilizzatore l'onere di navigare manualmente il CST tramite indi
 il design introduce il pattern degli _Extractor Objects_ tipizzati.
 
 Attraverso gli estrattori, la complessità dell'albero viene mascherata, 
-consentendo di definire regole di decodifica dichiarative basate sul pattern matching nativo di Scala. 
+consentendo di definire regole di decodifica dichiarative basate sul pattern matching nativo di Scala (FU11). 
 L'efficacia di questa scelta di design emerge chiaramente nel caso d'uso del linguaggio FINF.
 Per convertire le produzioni grammaticali nei nodi custom dell'AST (come _ValDecl_ o _FunDecl_),
-l'utilizzatore ricorre alla decostruzione sintattica. 
+l'utilizzatore ricorre alla decostruzione sintattica (FU2). 
 
 Un estrattore come `valueDeclaration(VAL(_), ID(valName), COLON(_), typeNode, ASSIGN(_), valueNode, SEMI(_))` intercetta un RuleNode, 
 scarta la sintassi superflua (parole chiave, punteggiatura) catturata dalle wildcard 
@@ -238,7 +238,7 @@ Per governare la complessità computazionale della conversione tra i due alberi,
 il design implementa un approccio monadico. 
 Come illustrato nel diagramma UML, l'astrazione poggia sul trait `AstDecoder`. 
 L'esposizione delle funzioni di ordine superiore _map_ e _flatMap_ permette di comporre decodificatori elementari in pipeline complesse. 
-L'operatore _orElse_ fornisce una logica di fallback fondamentale per processare produzioni con molteplici alternative 
+L'operatore _orElse_ fornisce una logica di fallback fondamentale per processare produzioni con molteplici alternative (FU11) 
 (es. un'espressione che può essere una costante, un identificatore o un'operazione binaria).
 
 A supporto del trait, il design valorizza il ruolo del _companion object_ AstDecoder, 
@@ -250,15 +250,15 @@ snellendo drasticamente la sintassi delle for-comprehension usate per la decodif
 ### Strategia di propagazione e aggregazione degli errori
 
 Il risultato del metodo _decode_ è progettato per preservare la purezza funzionale: 
-non solleva eccezioni a runtime, ma restituisce un Either[AstError, A]. 
+non solleva eccezioni a runtime, ma restituisce un Either[AstError, A] (FS24). 
 L'enum type AstError forma una gerarchia che modella semanticamente le cause dell'interruzione: 
 dal fallimento di business logic generato dall'utente, `DecodingError`, alle anomalie strutturali, 
-come `UnexpectedNodeStructure` (che preserva formalmente sia il nodo aspettato AnySymbol che la realtà strutturale effettiva CSTNode incontrata).
+come `UnexpectedNodeStructure` (che preserva formalmente sia il nodo aspettato AnySymbol che la realtà strutturale effettiva CSTNode incontrata) (FS27).
 
 A livello di design, per governare il flusso di esecuzione in presenza di fallimenti,
 il modulo di decodifica espone due strategie complementari:
 * **Fail-fast (Short-circuiting)**: Destinata all'elaborazione di strutture gerarchiche e logicamente dipendenti. 
-  In tali scenari, il fallimento nella decodifica di una sotto-componente invalida di riflesso l'intero costrutto. 
+  In tali scenari, il fallimento nella decodifica di una sotto-componente invalida di riflesso l'intero costrutto (FS25). 
   Facendo leva sulle proprietà algebriche del design monadico, il sistema interrompe l'analisi al primissimo errore riscontrato. 
   Questa scelta progettuale previene l'insorgere di stati inconsistenti a valle e arresta tempestivamente l'esecuzione di computazioni superflue.
 * **Accumulazione esaustiva**: Concepita per l'elaborazione di collezioni composte da elementi logicamente indipendenti 
@@ -266,4 +266,4 @@ il modulo di decodifica espone due strategie complementari:
   In questo contesto, un'interruzione prematura sarebbe una mancanza che obbliga l'utilizzatore a un ciclo di risoluzione dei problemi frammentato e iterativo (essendo un solo errore riportato per volta). 
   Per superare i limiti dello short-circuiting nativo, il design espone un costrutto dedicato che forza la valutazione dell'intera collezione, intercettando ogni singola anomalia. 
   I molteplici fallimenti vengono quindi consolidati strutturalmente attraverso il pattern Composite `AggregateError`, 
-  permettendo al sistema di restituire un report diagnostico simultaneo ed esaustivo.
+  permettendo al sistema di restituire un report diagnostico simultaneo ed esaustivo (FS26).
