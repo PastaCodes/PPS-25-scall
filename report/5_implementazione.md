@@ -251,6 +251,49 @@ Utilizzando `partitionMap`, il sistema non si interrompe al primo errore, ma val
 In presenza di difetti multipli (es. una sequenza di dichiarazioni indipendenti malformate), 
 i fallimenti vengono accumulati restituendo un `AggregateError` per una diagnostica simultanea.
 
+### Estrattori tipizzati
 
+Il disaccoppiamento tra la struttura vincolante del CSTNode (regole, foglie, errori)
+e il pattern matching utente è stato ottenuto creando estrattori custom tipizzati (_unapply_ / _unapplySeq_).
+In `TypedExtractors`, il meccanismo di estrazione nativo di Scala viene potenziato
+definendo gli estrattori direttamente come extension methods sui tipi grammaticali Nonterminal e Terminal.
 
+```scala
+extension (symbol: Nonterminal)
+  def unapplySeq(node: CSTNode): Option[Seq[CSTNode]] = node match
+    case CSTNode.RuleNode(s, children) if s.name == symbol.name => Some(children)
+    case _ => None
+```
 
+Questo meccanismo avanzato permette di utilizzare i terminali e i nonterminali della grammatica (come `VAL` o `valueDeclaration`) 
+direttamente come case classes all'interno dei blocchi match, 
+astraendo il programmatore dal dover navigare manualmente i RuleNode e i LeafNode del CST. 
+
+### FINF decoder
+
+La logica astratta di decodifica trova applicazione pratica nella costruzione dell'AST per il linguaggio FINF.
+I concetti del dominio sono modellati come Algebraic Data Types nel file `FinfNode` 
+(es. i sealed trait _Expr_ e _Declaration_ estesi dalle relative case class).
+La mappatura strutturale in `FinfDecoder` avviene istanziando il type class AstDecoder tramite blocchi _given_. 
+Integrando gli estrattori tipizzati custom e la for-comprehension, la decodifica nasconde completamente la complessità del CST:
+
+```scala
+given declDecoder: AstDecoder[Declaration] with
+  def decode(node: CSTNode): Either[AstError, Declaration] = node match
+    case topDeclaration(declNode)    => declNode.as[Declaration]
+    case commonDeclaration(declNode) => declNode.as[Declaration]
+    case valueDeclaration(VAL(_), ID(valName), COLON(_), typeNode, ASSIGN(_), valueNode, SEMI(_)) =>
+      for
+        decodedType  <- typeNode.as[TypeRef]
+        decodedValue <- valueNode.as[Expr]
+      yield ValDecl(valName, decodedType, decodedValue)
+    /* ... */
+    case _ => Left(AstError.UnexpectedNodeStructure(topDeclaration, node))
+```
+
+Come si osserva, il matching su `valueDeclaration` cattura selettivamente solo i nodi semanticamente rilevanti, 
+ignorando token sintattici e punteggiatura grazie all'uso dei placeholder _ sui terminali (es. VAL(_), COLON(_)). 
+La for-comprehension coordina l'estrazione ricorsiva sfruttando l'extension method .as[T]. 
+Dato che l'AstDecoder opera come una monade su Either, 
+la sequenza propaga automaticamente lo short-circuiting al primo fallimento su un sotto-nodo, 
+garantendo costruzioni strettamente tipizzate e sicure.
