@@ -1,6 +1,6 @@
 package it.unibo.scall
 
-import ast.{AstDecoder, AstError, CSTNode}
+import ast.{AstDecoder, AstError}
 import grammar.Element.Nonterminal
 import grammar.{Grammar, ProcessedGrammar}
 import lexer.Lexer
@@ -11,14 +11,10 @@ import parser.{ParseError, ParseReport, Parser, ParsingTable}
  */
 object ScaLL:
 
-  private type Analyzer[A] = String => AnalysisReport[A]
+  type Analyzer[A] = String => AnalysisReport[A]
 
-  /** Outcome of a single analysis, pairing the produced [[CSTNode CST]] with the syntactical
-   * errors met along the way. The decoded AST is computed on demand, so it is never requested
-   * when the input is not syntactically valid.
-   */
-  case class AnalysisReport[A](tree: CSTNode, parseErrors: Seq[ParseError])(using decoder: AstDecoder[A]):
-    lazy val decoded: Either[AstError, A] = decoder.decode(tree)
+  /* Outcome of a single analysis: the decoded AST and the syntactical errors met along the way. */
+  case class AnalysisReport[A](decoded: Either[AstError, A], parseErrors: Seq[ParseError]):
     def isParseValid: Boolean = parseErrors.isEmpty
     def isValid: Boolean = isParseValid && decoded.isRight
 
@@ -33,4 +29,5 @@ object ScaLL:
     input =>
       val tokens = lexer.tokenize(input)
       val ParseReport(parseTree, parseErrors) = parser.parseAll(tokens)
-      AnalysisReport(parseTree, parseErrors)
+      val decoded = decoder.decode(parseTree)
+      AnalysisReport(decoded, parseErrors)
