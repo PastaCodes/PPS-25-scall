@@ -226,7 +226,91 @@ val WHITESP = -> ("[\t \r\n]+".r, skip = true)
 val COMMENT = -> ("""/\*.*?\*/""".r, skip = true)
 ```
 
-## Jacopo Turchi
+## Merighi Daniele
+
+File prodotti: `grammar/Element`, `grammar/Grammar`, `parser/Parser`, `parser/Parsing`, `parser/ParseError`, `Demo`.
+
+Test prodotti: `grammar/GrammarTest`, `parser/ParserTest`, `parser/ParsingTest`.
+
+Il mio contributo si è basato sui costrutti del DSL con cui l'utilizzatore descrive la propria grammatica e sull'algoritmo di parsing LL(1), comprensivo della costruzione del CST e del recupero degli errori.
+In aggiunto, la demo a riga di comando mostra il montaggio completo della pipeline dal punto di vista di chi utilizza la libreria. 
+
+### Costrutti del DSL
+La definizione di una grammatica avviene estendendo il tipo `Grammar`, che espone come membri protetti le due varianti dell'operatore `->`.
+Entrambe ricevono in modo contestuale il nome dell'identificatore che le invoca, catturato in fase di compilazione della libreria `sourcecode`: l'utilizzatore non ripete mai il nome del simbolo come stringa. 
+La variante per i nonterminali riceve il corpo della regola _by-name_ e lo conserva come funzione, rimandandone la valutazione al momento in cui la grammatica verrà percorsa.
+La variante per i terminali uniforma stringhe ed espressioni regolari a queste utlime e registra il terminale nella collezione ordinata mantenuta dalla grammatica.
+```scala
+open class Grammar:
+  private var _terminals = Vector.empty[Terminal]
+
+  protected def ->(body: => Element)(using name: sourcecode.Name): Nonterminal =
+    Nonterminal(name.value, () => body)
+
+  protected def ->(pattern: String | Regex, skip: Boolean = false)(using name: sourcecode.Name): Terminal =
+    val regex = pattern match
+      case s: String => Regex.quote(s).r
+      case r: Regex  => r
+    register(Terminal(name.value, regex, skip))
+```
+Gli operatori EBNF sono metodi di estensione su `Element`, i cui casi corrispondono uno a uno ai costrutti della notazione. 
+La scelta dei simboli non è casuale: poiché in Scala la precedenza di un operatore dipende dal suo primo carattere `|` lega meno di `++` ed entrambi sono associativi a sinistra.
+Un'espressione come `a ++ b | c ++ d` viene quindi letta come `(a ++ b) | (c ++ d)`, che è esattamente la semantica EBNF senza bisogno di parentesi.
+```scala
+extension (element: Element)
+  def ++(other: Element): Concat = Concat(element, other)
+  def |(other: Element): Alternation = Alternation(element, other)
+  def ? : Optional = Optional(element)
+  def * : ZeroOrMore = ZeroOrMore(element)
+  def + : OneOrMore = OneOrMore(element)
+
+  def show: String = element match
+    case Eps => "\u03b5"
+    case Terminal(name, _, _) => name
+    case Concat(first, second) => s"${first.showInConcat} ${second.showInConcat}"
+    /* ... */
+```
+Il metodo `show` ricostruisce la notazione EBNF a partire dall'albero, delegando a due varianti private l'inserimento delle parantesi solo dove la precedenza lo richieda.
+
+### Parser LL(1)
+L'algoritmo in fase di design è definito in termini di una pila di simboli da riconoscere.
+L'implementazione non la usa: il ruolo della pila è ricoperto dalle chiamate ricorsive di `parseSymbol` e `parseSequence`, così che la costruzione dell'albero avvenga naturalmente nella risalita.
+Il metodo `expand` concentra l'intero contenuto nella tabella di transizione, restituendo `None` quando nessuna mossa è applicabile.
+Questa scelta di tipo rende il flusso di recupero una semplice alternativa al caso nominale, espressa da `getOrElse`, e non un ramo di controllo separato.
+```scala
+private def parseSymbol(symbol: AnySymbol)(using sync: Sync): Parsing[Seq[CSTNode]] =
+  lookahead.flatMap: next =>
+    expand(symbol, next).getOrElse:
+      for
+        _ <- record(unexpected(symbol, next))
+        junk <- skipUntil(symbol.starters union sync)
+        resumed <- lookahead
+        node <- expand(symbol, resumed).getOrElse(pure(Seq(ErrorNode(symbol.starters, junk))))
+      yield node
+
+private def expand(symbol: AnySymbol, next: Option[Token.Valid])(using Sync): Option[Parsing[Seq[CSTNode]]] =
+  (symbol, next) match
+    case (terminal: Terminal, Some(token)) if token.terminal == terminal =>
+      Some(advance andThen pure(Seq(LeafNode(token))))
+    case (nonterminal: AnyNonterminal, _) =>
+      table.get((nonterminal, next.terminal)).map: production =>
+        parseSequence(production).map(nodesFor(nonterminal, _))
+    case _ => None
+```
+Si osservi che il riconoscimento di un simbolo produce una sequenza di nodi e non un singolo nodo.
+È questa firma a realizzare l'appiattimento dei non terminali ad uso interno previsto in fase di design: un simbolo interno restituisce 
+direttamente i propri figli, che il chiamante concatena ai fratelli, mentre un nonterminale dichiarato restituisce l'unico nodo che li racchiude. 
+L'appiattimento non richiede quindi alcuna elaborazione successiva.
+```scala
+private def nodesFor(nonterminal: AnyNonterminal, children: Seq[CSTNode]): Seq[CSTNode] =
+  nonterminal match
+    case rule: Nonterminal => Seq(RuleNode(rule, children))
+    case _: InternalNonterminal => children
+```
+### Monade di Parsing
+
+
+## Turchi Jacopo
 
 File prodotti: `lexer/Lexer`, `lexer/Position`, `lexer/Token`, `ast/AstDecoder`, `ast/AstError`, `ast/CSTNode`, `ast/TypedExtractors`, `finf/ast/FinfNode`, `finf/ast/FinfDecoder`.
 
