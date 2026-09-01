@@ -32,6 +32,16 @@ Dopo un resoconto dell'andamento dello sprint precedente, sono nati dei nuovi ta
 rifinire alcuni elementi sviluppati. Questi compiti sono stati integrati ai nuovi
 nello sprint backlog 3 e assegnati come in precedenza.
 
+### Sprint 4
+
+Durante lo sprint 4, dopo un breve confronto,
+ci siamo resi conto che sarebbe utile sviluppare una CLI.
+Inoltre, essendo che il prodotto rispettava quasi tutti i requisiti descritti, si è deciso di concentrare le energie
+sul controllare e documentari i file, oltre al terminare gli ultimi task previsti.
+Infine, è stato assegnato il compito di realizzare il fat jar per la release del codice.
+
+
+
 
 
 
