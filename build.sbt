@@ -1,8 +1,11 @@
 scalaVersion := "3.8.4"
 
 lazy val root = rootProject
+  .dependsOn(scall, finf)
   .settings(
     name := "scall-demo",
+    ThisBuild / version := "1.0.0",
+    ThisBuild / organization := "it.unibo",
     assembly / mainClass := Some("it.unibo.finf.run"),
   )
 
