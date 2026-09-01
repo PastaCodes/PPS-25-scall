@@ -1,0 +1,34 @@
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pandoc and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc librsvg2-bin lmodern \
+            texlive-latex-recommended texlive-latex-extra
+
+      - name: Build PDF
+        run: |
+          cd docs
+          pandoc [0-9]*-*/index.md \
+            -f markdown-implicit_figures \
+            --resource-path=$(echo [0-9]*-* | tr ' ' ':') \
+            --toc \
+            --number-sections \
+            --metadata title=ScaLL \
+            --metadata author="Buda Marco, Merighi Daniele, Turchi Jacopo" \
+            -V geometry:margin=1in \
+            -V header-includes='\usepackage{titlesec}\newcommand{\sectionbreak}{\clearpage}' \
+            -o ../report.pdf
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: report-pdf
+          path: report.pdf
