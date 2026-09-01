@@ -1,8 +1,12 @@
 # Implementazione
 
+Il gruppo si impegna a mantenere una forte collaborazione durante l'intera durata del progetto, attraverso confronti frequenti riguardo aspetti di dominio e scelte relative alle interfacce condivise.
+Indipendentemente da questo, il processo di implementazione viene svolto singolarmente, pertanto ogni membro ha un chiaro insieme di file prodotti, dei quali possiede completa responsabilità.
+
 ## Buda Marco
 
 File prodotti: `grammar/ProcessedGrammar`, `parser/ParsingTable`, `prolog/parsing_table`, `util/Scala2P`, `util/CollectionUtils`, `Finf`.
+
 Test prodotti: `grammar/ProcessedGrammarAlternativesTest`, `grammar/ProcessedGrammarProductionsTest`, `grammar/LeftFactoringTest`, `parser/ParsingTableTest`.
 
 Il mio contributo si è focalizzato sul processo di conversione di grammatiche, implementato in stile funzionale, e sulla costruzione di tabelle di parsing, implementata invece attraverso la programmazione logica.
@@ -87,7 +91,9 @@ def prefixed(alternatives: Alternatives): Map[SymbolSeq, Alternatives] =
 
 ### Tabella di parsing
 
-Vengono distinti i casi in cui si considera una stringa piuttosto che un singolo simbolo.
+Come anticipato, la costruzione della tabella di parsing avviene attraverso un engine TuProlog.
+La teoria utilizzata coincide ampiamente con le formule rielaborate in fase di design, a partire dal calcolo dei FIRST set.
+Per questi vengono distinti i casi in cui si considera una stringa piuttosto che un singolo simbolo.
 
 ```prolog
 % first_str(String, EntryOr0)
@@ -100,7 +106,7 @@ first_str([X | T], A) :- first(X, 0), first_str(T, A).
 first(X, A) :- production(X, B), first_str(B, A).
 ```
 
-Si introduce il concetto intermedio di "following", ossia un'occorrenza di uno specifico simbolo all'interno del corpo di una produzione.
+Parallelamente, si introduce il concetto intermedio di "following", ossia un'occorrenza di uno specifico simbolo all'interno del corpo di una produzione.
 La stringa di simboli che lo segue, oltre alla testa della produzione in questione, risultano utili per il calcolo dei FOLLOW set.
 
 ```prolog
@@ -113,12 +119,111 @@ follow(X, A) :- following(X, S, _), first_str(S, A), A \== 0.
 follow(X, A) :- following(X, S, H), H \== X, first_str(S, 0), follow(H, A).
 ```
 
-Da qui in poi vai con un filo di gas.
+Sulla base di questi avviene il calcolo delle singole celle della tabella di parsing.
+Risolvendo il goal generico `parsing_table_cell(X, A, B)` è possibile ottenere il contenuto di ciascuna cella non vuota.
+Lato Scala, è sufficiente iterare le soluzioni e raccogliere i valori sotto forma di mappa con chiavi composte.
 
 ```prolog
 % parsing_cell(Nonterminal, TerminalOr1, Body)
 parsing_table_cell(X, A, B) :- production(X, B), first_str(B, A), A \== 0.
 parsing_table_cell(X, A, B) :- production(X, B), first_str(B, 0), follow(X, A).
+```
+
+La risoluzione del goal finale richiede che siano inclusi nella base di conoscenza le informazioni riguardo la specifica grammatica.
+In particolare, deve essere indicato il simbolo di partenza tramite `start_symbol/1`, l'insieme di terminali tramite `terminal/1` per ciascuno e, infine, le produzioni tramite `production/2` con testa e corpo per ciascuna.
+
+Il metodo `ParsingTable.compute` comincia con questa fase di estensione della base di conoscenza.
+Per poter essere utilizzati dall'engine, gli oggetti della grammatica devono essere registrati.
+Questo processo restituisce oggetti combinabili per formare i termini composti necessari.
+Una volta formato e risolto il goal per la tabella di parsing, gli stessi oggetti possono essere estratti dalle soluzioni.
+
+### Binding per Prolog
+
+L'interazione Scala-Prolog viene regolata da un insieme di metodi raccolti in `Scala2P`.
+Istanze di questo tipo racchiudono un riferimento ad un engine sottostante e vengono richieste come parametri di tipo `using` nei metodi forniti.
+Design e implementazione di queste funzionalità sono guidati dal requisito di qualità interna del sistema (vedi I1), piuttosto che da rigidi requisiti funzionali o criteri di dominio.
+Inoltre, le funzionalità implementate sono limitate alle funzionalità richieste dal problema centrale, pertanto ci si limita a mostrarne l'utilizzo pratico.
+
+```scala
+private lazy val engine = engineWithTheoryFile(/* ... */)
+given Scala2P = engine
+
+def compute(grammar: ProcessedGrammar): ParsingTable =
+  registerScope:
+    withKnowledge(grammarKnowledge(grammar)): () =>
+      val X = variable("X"); val A = variable("A"); val B = variable("B")
+      val parsingTableGoal = compoundTerm("parsing_table_cell", X, A, B)
+      parsingTableGoal.solveAll.collectSuccess: s =>
+        val row = s.getRegistered[AnyNonterminal](X)
+        val col = s.get(A):
+          case Registered[Terminal](t) => t
+          case Int(1) => Eoi
+        val value = s.getRegisteredList[AnySymbol](B)
+        (row, col) -> value
+      .toMap
+
+private def grammarKnowledge(g: ProcessedGrammar)(using scope: RegisterScope) =
+  given TermConversion[AnySymbol] = register
+  val t = g.terminals.filter(!_.isSkipped).map: t =>
+    compoundTerm("terminal", t)
+  val p = g.productions.mapEntries: (head, body) =>
+    compoundTerm("production", head, body)
+  val s = compoundTerm("start_symbol", g.startSymbol)
+  t ++ p :+ s
+```
+
+In tale estratto, relativo alla costruzione della tabella di parsing, si osservi l'utilizzo dei seguenti metodi:
+* `engineWithTheoryFile`: inizializzazione dell'engine con una teoria di base.
+* `registerScope`: dichiarazione di uno scope in cui è abilitato il metodo `register`, con pulizia finale automatica.
+* `withKnowledge`: estensione della teoria dell'engine, per la durata dell'azione interna.
+* `variable` e `compoundTerm`: creazione di termini Prolog.
+* `Term.solveAll`: risoluzione di un goal e raggruppamento di tutte le soluzioni in un `Iterable`, ispirato alla versione vista durante il corso.
+* `Iterable[SolveInfo].collectSuccess`: filtraggio delle soluzioni valide e trasformazione in istanze di uno specifico tipo.
+* `SolveInfo.getRegistered`: estrazione di un oggetto con uno specifico tipo associato ad una variabile all'interno della soluzione.
+* `SolveInfo.get`: estrazione di un valore in base a più possibili casi.
+* `Registered.unapply`: caso di estrazione per oggetti con uno specifico tipo.
+* `Int.unapply`: caso di estrazione per numeri interi.
+* `SolveInfo.getRegisteredList`: estrazione di una lista Prolog per ottenere una collezione di oggetti con uno specifico tipo.
+* `register`: registrazione di un oggetto all'interno dell'ambiente Prolog, restituendo il termine generato.
+
+### Grammatica FINF
+
+Si mostra di seguito un estratto della grammatica prodotta per il caso d'uso FINF, in modo da evidenziare l'espressività del DSL.
+
+```scala
+val program = -> (
+  (LET ++ topDeclaration.* ++ IN).? ++ expression ++ SEMI
+)
+val topDeclaration = -> (
+  recordDeclaration
+| functionDeclaration
+| valueDeclaration
+)
+/* ... */
+val functionDeclaration = -> (
+  functionSignature ++ functionBody
+)
+val functionSignature = -> (
+  FUN ++ ID ++ COLON ++ typeRef ++ LPAREN ++ parameterList ++ RPAREN
+)
+val functionBody = -> (
+  (LET ++ commonDeclaration.* ++ IN).? ++ expression ++ SEMI
+)
+/* ... */
+val parameterList = -> (
+  ( ID ++ COLON ++ typeRef ++ (COMMA ++ ID ++ COLON ++ typeRef).* ).?
+)
+/* ... */
+val PLUS    = -> ("+")
+val MINUS   = -> ("-")
+/* ... */
+val LET     = -> ("let")
+val IN      = -> ("in")
+/* ... */
+val DIGITS  = -> ("0|[1-9][0-9]*".r)
+val ID      = -> ("[a-zA-Z][a-zA-Z0-9]*".r)
+val WHITESP = -> ("[\t \r\n]+".r, skip = true)
+val COMMENT = -> ("""/\*.*?\*/""".r, skip = true)
 ```
 
 ## Jacopo Turchi
@@ -251,6 +356,50 @@ Utilizzando `partitionMap`, il sistema non si interrompe al primo errore, ma val
 In presenza di difetti multipli (es. una sequenza di dichiarazioni indipendenti malformate), 
 i fallimenti vengono accumulati restituendo un `AggregateError` per una diagnostica simultanea.
 
+### Estrattori tipizzati
 
+Il disaccoppiamento tra la struttura vincolante del CSTNode (regole, foglie, errori)
+e il pattern matching utente è stato ottenuto creando estrattori custom tipizzati (_unapply_ / _unapplySeq_).
+In `TypedExtractors`, il meccanismo di estrazione nativo di Scala viene potenziato
+definendo gli estrattori direttamente come extension methods sui tipi grammaticali Nonterminal e Terminal.
 
+```scala
+extension (symbol: Nonterminal)
+  def unapplySeq(node: CSTNode): Option[Seq[CSTNode]] = node match
+    case CSTNode.RuleNode(s, children) if s.name == symbol.name => Some(children)
+    case _ => None
+```
 
+Questo meccanismo avanzato permette di utilizzare i terminali e i nonterminali della grammatica (come `VAL` o `valueDeclaration`) 
+direttamente come case classes all'interno dei blocchi match, 
+astraendo il programmatore dal dover navigare manualmente i RuleNode e i LeafNode del CST. [\[esempio di implementazione in FINF Decoder\]](#finf-decoder-code)
+
+### FINF decoder
+
+La logica astratta di decodifica trova applicazione pratica nella costruzione dell'AST per il linguaggio FINF.
+I concetti del dominio sono modellati come Algebraic Data Types nel file `FinfNode` 
+(es. i sealed trait _Expr_ e _Declaration_ estesi dalle relative case class).
+La mappatura strutturale in `FinfDecoder` avviene istanziando il type class AstDecoder tramite blocchi _given_. 
+Integrando gli estrattori tipizzati custom e la for-comprehension, la decodifica nasconde completamente la complessità del CST:
+
+<a id="finf-decoder-code"></a>
+```scala
+given declDecoder: AstDecoder[Declaration] with
+  def decode(node: CSTNode): Either[AstError, Declaration] = node match
+    case topDeclaration(declNode)    => declNode.as[Declaration]
+    case commonDeclaration(declNode) => declNode.as[Declaration]
+    case valueDeclaration(VAL(_), ID(valName), COLON(_), typeNode, ASSIGN(_), valueNode, SEMI(_)) =>
+      for
+        decodedType  <- typeNode.as[TypeRef]
+        decodedValue <- valueNode.as[Expr]
+      yield ValDecl(valName, decodedType, decodedValue)
+    /* ... */
+    case _ => Left(AstError.UnexpectedNodeStructure(topDeclaration, node))
+```
+
+Come si osserva, il matching su `valueDeclaration` cattura selettivamente solo i nodi semanticamente rilevanti, 
+ignorando token sintattici e punteggiatura grazie all'uso dei placeholder _ sui terminali (es. VAL(_), COLON(_)). 
+La for-comprehension coordina l'estrazione ricorsiva sfruttando l'extension method `.as[T]`. 
+Dato che l'AstDecoder opera come una monade su Either, 
+la sequenza propaga automaticamente lo short-circuiting al primo fallimento su un sotto-nodo, 
+garantendo costruzioni strettamente tipizzate e sicure.
