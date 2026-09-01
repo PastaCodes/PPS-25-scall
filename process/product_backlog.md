@@ -434,10 +434,10 @@
         </tr>
         <tr>
             <td>-</td>
-            <td>Compile fat jar for release</td>
+            <td>Finalize build for release</td>
             <td>MB</td>
-            <td>?</td>
-            <td>?</td><td>?</td><td>?</td><td>0</td><td>0</td>
+            <td>1</td>
+            <td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>
         </tr>
     </tbody>
 </table>
