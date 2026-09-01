@@ -32,6 +32,29 @@ Dopo un resoconto dell'andamento dello sprint precedente, sono nati dei nuovi ta
 rifinire alcuni elementi sviluppati. Questi compiti sono stati integrati ai nuovi
 nello sprint backlog 3 e assegnati come in precedenza.
 
+### Sprint 4
 
+Durante lo sprint 4, dopo un breve confronto,
+ci siamo resi conto che sarebbe utile sviluppare una CLI.
+Inoltre, essendo che il prodotto rispettava quasi tutti i requisiti descritti, si è deciso di concentrare le energie
+sul controllare e documentari i file, oltre al terminare gli ultimi task previsti.
+Infine, è stato assegnato il compito di realizzare il fat jar per la release del codice.
 
+## Commenti finali
 
+Quest'esperienza ci ha fatto apprezzare e allo stesso tempo detestare certi aspetti della metodologia scrum.
+Per quanto possa essere utile per mantenere il gruppo sincronizzato e sul pezzo, presenta anche
+delle pesantezze ritenute un po' forzate che smorzano il flusso lavorativo dello sviluppatore.
+<br>
+Similmente anche il TDD, risultato molto utile per ridurre il numero di errori e bug
+ritrovati nel software, ha però allungato i tempi di sviluppo.
+<br>
+Un aspetto particolarmente positivo del progetto ha riguardato la programmazione funzionale.
+È stata una boccata d'aria fresca nel nostro modo di pensare, risultando in un'occasione di provare
+qualcosa di nuovo e motivante.
+<br>
+Il dominio applicativo, nonostante fosse stato scelto all'unanimità a inizio progetto,
+ha fatto nascere col tempo opinioni differenti.
+<br>
+Infine, per quanto riguarda la programmazione logica, è risultata essere una challenge stimolante,
+penalizzata soltanto dalla libreria difficilmente utilizzabile.

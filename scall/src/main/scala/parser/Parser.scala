@@ -9,18 +9,27 @@ import lexer.Token
 import parser.ParsingTable.ParsingTable
 import parser.Parsing.*
 
+/** Result of an analysis: the [[CSTNode CST]] produced by the parser, which is complete even
+ *  for malformed input, together with the errors met, in the order they were found.
+ */
 case class ParseReport(tree: CSTNode, errors: Seq[ParseError]):
   def isValid: Boolean = errors.isEmpty
 
+/** A table-driven LL(1) parser. Whenever no transition applies the error is recorded and the
+ *  analysis resumes by discarding tokens up to a synchronisation terminal, so that a single
+ *  run reports every error rather than only the first one.
+ */
 class Parser(table: ParsingTable, startSymbol: Nonterminal):
   import ParseError.*
 
   private type Sync = Set[TerminalOrEoi]
 
+  /** Recognises the whole token stream, returning the tree together with every error met. */
   def parseAll(tokens: LazyList[Token]): ParseReport =
     val step = parseProgram.run(tokens)
     ParseReport(step.value, step.errors)
 
+  /** Recognises the whole token stream, reducing the outcome to the first error, if any. */
   def parse(tokens: LazyList[Token]): Either[ParseError, CSTNode] =
     val report = parseAll(tokens)
     report.errors.headOption.toLeft(report.tree)

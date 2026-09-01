@@ -1,5 +1,11 @@
 # Design di dettaglio
 
+Alcuni dei diagrammi riportati presentano l'uso di stereotipi non standard per la rappresentazione di tipi di dato algebrici:
+* **\<\<enum\>\>** per indicare una normale enumerazione.
+* **\<\<object\>\>** per indicare un tipo che coincide con la sua stessa unica istanza.
+* **\<\<product\>\>** per indicare un normale _product type_.
+* **\<\<sum\>\>** per indicare un _sum type_ ottenuto, a differenza di un'enumerazione, dall'unione di tipi definiti separatamente che non condividono un sopratipo.
+
 ## Definizione della grammatica
 
 La grammatica in forma EBNF è l'unico ingresso che l'utilizzatore deve fornire per descrivere la sintassi del proprio linguaggio, ed è qui il punto in cui la libreria è più esposta:
@@ -26,10 +32,10 @@ Le scelte di design rilevanti riguardano la forma che la definizione assume dal 
 
 ![](images/detailed_design_processed_grammar_class.svg)
 
-Volendo rappresentare il risultato della conversione da grammatica EBNF a CFG pura, si introduce il concetto di grammatica processata (`ProcessedGrammar`), un _product type_ composto da un simbolo di partenza, una collezione di terminali e una collezione di produzioni, come espresso dai requisiti.
+Volendo rappresentare il risultato della conversione da grammatica EBNF a CFG pura, si introduce il concetto di grammatica processata (`ProcessedGrammar`), un _product type_ composto da un simbolo di partenza, una collezione di terminali e una collezione di produzioni, come espresso dal requisito FS3.
 Anche in questo caso, le priorità dei terminali vengono espresse dal loro ordinamento.
 
-Si introduce il concetto di simbolo nonterminale ad uso interno (`InternalNonterminal`), che può essere utilizzato dagli operatori di ripetizione e dall'algoritmo di left factoring automatico.
+Si introduce il concetto di simbolo nonterminale ad uso interno (`InternalNonterminal`), previsto dal requisito FS6, che può essere utilizzato dagli operatori di ripetizione e dall'algoritmo di left factoring automatico.
 Questi nonterminali sono distinti da quelli definiti dalla grammatica di partenza, in quanto:
 * Non hanno una regola (EBNF) che li definisca.
 * Non hanno un nome definito dall'utilizzatore. In fase di implementazione verrà aggiunto un nome ad uso interno.
@@ -45,7 +51,7 @@ A questo punto, le produzioni sono rappresentate dall'associazione di un nonterm
 
 ![](images/detailed_design_processed_grammar_activity.svg)
 
-Data la struttura ad albero della grammatica EBNF in ingresso, il processo di conversione avviene attraverso una visita ricorsiva ispirata al _visitor pattern_, seppure in chiave funzionale.
+Data la struttura ad albero della grammatica EBNF in ingresso, il processo di conversione (richiesto da FS4) avviene attraverso una visita ricorsiva ispirata al _visitor pattern_, seppure in chiave funzionale.
 La visita comincia a partire dal simbolo iniziale fornito ed esplora automaticamente tutti i simboli raggiungibili da esso.
 Ogni chiamata restituisce un risultato intermedio e si occupa di combinare i risultati prodotti dagli eventuali nodi figli, oltre alle proprie informazioni.
 A seconda che l'elemento attuale sia una foglia, un operatore unario, o un operatore binario, il numero di chiamate ricorsive varia da zero a due, una per ciascun nodo figlio.
@@ -56,7 +62,7 @@ Limitatamente a questa fase interna, si fa riferimento alle "alternative" come l
 Si osservi che visitare lo stesso elemento più volte non produce mai nuove informazioni.
 
 Il calcolo delle alternative ed eventuali produzioni generate varia a seconda dello specifico tipo di elemento.
-Fra le possibili conversioni che producono una grammatica fattorizzata a sinistra equivalente, si adotta la seguente:
+Fra le possibili conversioni che producono una grammatica fattorizzata a sinistra (FS8) ed equivalente (FS7), si adotta la seguente:
 
 * Elemento vuoto:&ensp;$\mathrm{ALT}(\varepsilon)=\lbrace\, \varepsilon \,\rbrace$,&ensp;$\mathrm{PROD}(\varepsilon)=\emptyset$.
 * Terminale:&ensp;$\mathrm{ALT}(b)=\lbrace\, b \,\rbrace$,&ensp;$\mathrm{PROD}(b)=\emptyset$.
@@ -82,12 +88,12 @@ La ricorsione si interrompe per le alternative che non hanno prefissi in comune 
 
 ![](images/detailed_design_parsing_table_class.svg)
 
-La rappresentazione di tabelle di parsing segue dai vincoli di dominio.
+La rappresentazione di tabelle di parsing segue dai vincoli di dominio espressi dal requisito FS16.
 Viene introdotto l'oggetto `Eoi` per indicare l'esaurimento dell'input, così che possa apparire come colonna nella tabella, insieme ai terminali della grammatica.
 
 ### Costruzione
 
-La costruzione è definita da regole formali, per questo motivo si opta per un'implementazione in programmazione logica.
+La costruzione è definita da regole formali (vedi FS22), per questo motivo si opta per un'implementazione in programmazione logica (vedi I4).
 Poiché questa scelta impatta drasticamente sulla struttura di una parte significativa del sistema, la si considera una decisione di design.
 Altri elementi del dominio potrebbero essere espressi in termini di programmazione logica, ma, nel rispetto del requisito I2, si limita l'applicazione a questo solo sottoproblema.
 
@@ -115,16 +121,16 @@ pertanto si prevede che in fase di implementazione emerga la necessità di uno s
 
 L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale. 
 Il suo scopo è la conversione della stringa di input in una sequenza di token, 
-ciascuno associato a un simbolo terminale, mantenendo traccia delle coordinate spaziali 
-calcolate in base alla posizione nel testo originale.
+ciascuno associato a un simbolo terminale (vedi FS10), mantenendo traccia delle coordinate spaziali 
+calcolate in base alla posizione nel testo originale (FS15).
 
 Le principali scelte di design sono ricadute su:
 
 * **Immutabilità e incapsulamento dello stato (Cursor)**: Per supportare l'iterazione sull'input mantenendo l'assenza di side-effect, 
-  il tracciamento spaziale (offset, riga, colonna) è incapsulato in un'entità privata Cursor. 
+  il tracciamento spaziale (offset, riga, colonna) è incapsulato in un'entità privata Cursor (FS15). 
   Ad ogni match, il lexer non muta puntatori globali, ma genera una nuova istanza di Cursor tramite il metodo `advance`, garantendo la purezza funzionale dell'avanzamento.
 
-* **Gestione funzionale degli errori e ADT**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi, 
+* **Gestione funzionale degli errori e ADT**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi (FS14), 
   il design esclude il lancio di eccezioni in fase lessicale. 
   Il tipo di ritorno è modellato come enum type `Token`, permettendo di istanziare ValidToken per i match corretti o di isolare il carattere invalido in uno specifico ErrorToken, 
   incapsulando il fallimento per consentire l'analisi del resto dell'input.
@@ -138,17 +144,17 @@ Sia $p_t$ il prefisso di $S$ che verifica la regola associata al terminale $t \i
 $M = \lbrace\, (t, p_t) \;\vert{}\; p_t \text{ è un prefisso valido di } S \,\rbrace$
 
 Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategie di filtraggio:
-* **Maximal match (Longest-prefix-match)**: Il sistema seleziona il sottoinsieme $M_{max} \subseteq M$ che massimizza la lunghezza del prefisso riconosciuto. Ovvero:
+* **Maximal match (Longest-prefix-match)**: Il sistema seleziona il sottoinsieme $M_{max} \subseteq M$ che massimizza la lunghezza del prefisso riconosciuto (FS11). Ovvero:
   $M_{max} = \lbrace\, (t, p_t) \in M \;\vert{}\; \vert{}p_t\vert{} = \max_{(x, p_x) \in M} \vert{}p_x\vert{} \,\rbrace$
 * **Fallback posizionale (Priorità)**: Se $\vert{}M_{max}\vert{} > 1$, si verifica una collisione fra terminali che riconoscono la medesima porzione di testo
   (ad esempio, una parola chiave come if che fa match sia col terminale IF che col terminale generico ID).
-  Il sistema risolve il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica.
+  Il sistema risolve il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica (FS12).
   Definendo $idx(t)$ come l'indice di dichiarazione del terminale $t$, si estrae l'unico vincitore $(t^*, p_{t^*})$ tale che $idx(t^*)$ sia minimo.
 * **Scarto dei terminali ignorabili**: Se il terminale vincitore $t^*$ è esplicitamente marcato come ignorabile (es. spaziature o commenti),
-  il prefisso $p_{t^*}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output.
+  il prefisso $p_{t^*}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output (FS13).
 * **Error fallback**: Nel caso limite in cui l'insieme dei match validi sia vuoto ($M = \emptyset$), il sistema non riconosce alcun prefisso.
   Per evitare stalli e proseguire l'analisi, il lexer consuma esattamente il primo carattere di $S$,
-  lo incapsula in un ErrorToken tracciandone la posizione originaria, e riprende l'algoritmo sul resto della stringa.
+  lo incapsula in un ErrorToken tracciandone la posizione originaria, e riprende l'algoritmo sul resto della stringa (FS14).
 
 ## Analizzatore sintattico
 È il filtro che converte lo stream di token in un CST, guidato dalla tabella di parsing e dal simbolo iniziale ricevuti in costruzione.
@@ -193,7 +199,7 @@ La presenza di input residuo dopo il riconoscimento del simbolo iniziale è segn
 ## Decodifica CST-AST
 
 Il processo di decodifica trasforma l'albero sintattico concreto (CST), generato dal parser,
-nell'albero sintattico astratto (AST) specifico per il dominio dell'utente.
+nell'albero sintattico astratto (AST) specifico per il dominio dell'utente (vedi FS23 e FU2).
 Poiché la forma del CST è strettamente vincolata alle regole di derivazione della grammatica formale,
 il design necessita di disaccoppiare la visita dalla logica di costruzione dei nodi finali.
 
@@ -216,10 +222,10 @@ Per evitare all'utilizzatore l'onere di navigare manualmente il CST tramite indi
 il design introduce il pattern degli _Extractor Objects_ tipizzati.
 
 Attraverso gli estrattori, la complessità dell'albero viene mascherata, 
-consentendo di definire regole di decodifica dichiarative basate sul pattern matching nativo di Scala. 
+consentendo di definire regole di decodifica dichiarative basate sul pattern matching nativo di Scala (FU11). 
 L'efficacia di questa scelta di design emerge chiaramente nel caso d'uso del linguaggio FINF.
 Per convertire le produzioni grammaticali nei nodi custom dell'AST (come _ValDecl_ o _FunDecl_),
-l'utilizzatore ricorre alla decostruzione sintattica. 
+l'utilizzatore ricorre alla decostruzione sintattica (FU2). 
 
 Un estrattore come `valueDeclaration(VAL(_), ID(valName), COLON(_), typeNode, ASSIGN(_), valueNode, SEMI(_))` intercetta un RuleNode, 
 scarta la sintassi superflua (parole chiave, punteggiatura) catturata dalle wildcard 
@@ -232,7 +238,7 @@ Per governare la complessità computazionale della conversione tra i due alberi,
 il design implementa un approccio monadico. 
 Come illustrato nel diagramma UML, l'astrazione poggia sul trait `AstDecoder`. 
 L'esposizione delle funzioni di ordine superiore _map_ e _flatMap_ permette di comporre decodificatori elementari in pipeline complesse. 
-L'operatore _orElse_ fornisce una logica di fallback fondamentale per processare produzioni con molteplici alternative 
+L'operatore _orElse_ fornisce una logica di fallback fondamentale per processare produzioni con molteplici alternative (FU11) 
 (es. un'espressione che può essere una costante, un identificatore o un'operazione binaria).
 
 A supporto del trait, il design valorizza il ruolo del _companion object_ AstDecoder, 
@@ -244,15 +250,15 @@ snellendo drasticamente la sintassi delle for-comprehension usate per la decodif
 ### Strategia di propagazione e aggregazione degli errori
 
 Il risultato del metodo _decode_ è progettato per preservare la purezza funzionale: 
-non solleva eccezioni a runtime, ma restituisce un Either[AstError, A]. 
+non solleva eccezioni a runtime, ma restituisce un Either[AstError, A] (FS24). 
 L'enum type AstError forma una gerarchia che modella semanticamente le cause dell'interruzione: 
 dal fallimento di business logic generato dall'utente, `DecodingError`, alle anomalie strutturali, 
-come `UnexpectedNodeStructure` (che preserva formalmente sia il nodo aspettato AnySymbol che la realtà strutturale effettiva CSTNode incontrata).
+come `UnexpectedNodeStructure` (che preserva formalmente sia il nodo aspettato AnySymbol che la realtà strutturale effettiva CSTNode incontrata) (FS27).
 
 A livello di design, per governare il flusso di esecuzione in presenza di fallimenti,
 il modulo di decodifica espone due strategie complementari:
 * **Fail-fast (Short-circuiting)**: Destinata all'elaborazione di strutture gerarchiche e logicamente dipendenti. 
-  In tali scenari, il fallimento nella decodifica di una sotto-componente invalida di riflesso l'intero costrutto. 
+  In tali scenari, il fallimento nella decodifica di una sotto-componente invalida di riflesso l'intero costrutto (FS25). 
   Facendo leva sulle proprietà algebriche del design monadico, il sistema interrompe l'analisi al primissimo errore riscontrato. 
   Questa scelta progettuale previene l'insorgere di stati inconsistenti a valle e arresta tempestivamente l'esecuzione di computazioni superflue.
 * **Accumulazione esaustiva**: Concepita per l'elaborazione di collezioni composte da elementi logicamente indipendenti 
@@ -260,4 +266,4 @@ il modulo di decodifica espone due strategie complementari:
   In questo contesto, un'interruzione prematura sarebbe una mancanza che obbliga l'utilizzatore a un ciclo di risoluzione dei problemi frammentato e iterativo (essendo un solo errore riportato per volta). 
   Per superare i limiti dello short-circuiting nativo, il design espone un costrutto dedicato che forza la valutazione dell'intera collezione, intercettando ogni singola anomalia. 
   I molteplici fallimenti vengono quindi consolidati strutturalmente attraverso il pattern Composite `AggregateError`, 
-  permettendo al sistema di restituire un report diagnostico simultaneo ed esaustivo.
+  permettendo al sistema di restituire un report diagnostico simultaneo ed esaustivo (FS26).

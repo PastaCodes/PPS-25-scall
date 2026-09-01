@@ -11,6 +11,7 @@ per la realizzazione di test esplicativi e facilmente leggibili.
 Questo consente inoltre di capire il funzionamento dell'implementazione a monte semplicemente osservando i test.
 
 Ognuna delle componenti centrali del sistema è dunque caratterizzata da un grado di copertura totale in termini di _unit test_.
+In aggiunta, il file `PipelineTest` contiene una raccolta di _integration test_, che vanno a verificare il comportamento complessivo del sistema.
 
 ### Esempi rilevanti
 
