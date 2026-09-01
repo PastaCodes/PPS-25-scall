@@ -267,7 +267,7 @@ extension (symbol: Nonterminal)
 
 Questo meccanismo avanzato permette di utilizzare i terminali e i nonterminali della grammatica (come `VAL` o `valueDeclaration`) 
 direttamente come case classes all'interno dei blocchi match, 
-astraendo il programmatore dal dover navigare manualmente i RuleNode e i LeafNode del CST. 
+astraendo il programmatore dal dover navigare manualmente i RuleNode e i LeafNode del CST. [\[esempio di implementazione in FINF Decoder\]](#finf-decoder-code)
 
 ### FINF decoder
 
@@ -277,6 +277,7 @@ I concetti del dominio sono modellati come Algebraic Data Types nel file `FinfNo
 La mappatura strutturale in `FinfDecoder` avviene istanziando il type class AstDecoder tramite blocchi _given_. 
 Integrando gli estrattori tipizzati custom e la for-comprehension, la decodifica nasconde completamente la complessità del CST:
 
+<a id="finf-decoder-code"></a>
 ```scala
 given declDecoder: AstDecoder[Declaration] with
   def decode(node: CSTNode): Either[AstError, Declaration] = node match
