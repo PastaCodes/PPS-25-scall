@@ -1,5 +1,13 @@
 # Design di dettaglio
 
+// TODO: aggiungere paragrafino introduttivo?
+
+Alcuni dei diagrammi riportati presentano l'uso di stereotipi non standard per la rappresentazione di tipi di dato algebrici:
+* **\<\<enum\>\>** per indicare una normale enumerazione.
+* **\<\<object\>\>** per indicare un tipo che coincide con la sua stessa unica istanza.
+* **\<\<product\>\>** per indicare un normale _product type_.
+* **\<\<sum\>\>** per indicare un _sum type_ ottenuto, a differenza di un'enumerazione, dall'unione di tipi definiti separatamente che non condividono un sopratipo.
+
 ## Definizione della grammatica
 
 La grammatica in forma EBNF è l'unico ingresso che l'utilizzatore deve fornire per descrivere la sintassi del proprio linguaggio, ed è qui il punto in cui la libreria è più esposta:
