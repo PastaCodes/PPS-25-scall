@@ -3,6 +3,9 @@ package grammar
 
 import scala.util.matching.Regex
 
+/** An element of a grammar in extended Backus-Naur form. Elements compose into a tree
+ *  through the concatenation, alternation, optionality and repetition operators.
+ */
 enum Element:
   case Eps
   case Terminal(name: String, regex: Regex, isSkipped: Boolean = false)
@@ -26,6 +29,9 @@ object Element:
     def * : ZeroOrMore = ZeroOrMore(element)
     def + : OneOrMore = OneOrMore(element)
 
+    /** Renders this element back into EBNF notation, adding parentheses only where the
+     * precedence of the operators requires them.
+     */
     def show: String = element match
       case Element.Eps => "\u03b5"
       case Element.Terminal(name, _, _) => name
