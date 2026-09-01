@@ -42,7 +42,7 @@ Infine, è stato assegnato il compito di realizzare il fat jar per la release de
 
 ---
 
-Il product backlog e i vari sprint backlog sono disponibili in [backlogs.md](https://github.com/PastaCodes/PPS-25-scall/blob/docs/report/process/backlogs.md).
+Il product backlog e i vari sprint backlog sono disponibili in [backlogs.md](https://github.com/PastaCodes/PPS-25-scall/blob/main/process/backlogs.md).
 
 ## Commenti finali
 
