@@ -188,12 +188,23 @@ venga selezionato il terminale dichiarato per primo.
 
 ### AstDecoder
 
-La trasformazione CST-AST richiede la composizione di operazioni dipendenti soggette a fallimento strutturale. 
+Per trasformare il codice da CST a AST serve una serie di passaggi concatenati che rischiano di bloccarsi al minimo errore.
+Per questo, il sistema deve offrire degli strumenti che permettano agli utenti di personalizzare il processo.
 Questa problematica è stata risolta implementando il pattern architetturale delle monadi attraverso il trait AstDecoder[A].
 Il decoder espone le funzioni di ordine superiore map e flatMap 
 che permettono di comporre decodificatori elementari in pipeline type-safe:
 
-
+```scala
+trait AstDecoder[A]:
+  self =>
+  def decode(node: CSTNode): Either[AstError, A]
+  def map[B](f: A => B): AstDecoder[B] = node =>
+    self.decode(node).map(f)
+  def flatMap[B](f: A => AstDecoder[B]): AstDecoder[B] = node =>
+    self.decode(node).flatMap(a => f(a).decode(node))
+  def orElse[B >: A](fallback: => AstDecoder[B]): AstDecoder[B] = node =>
+    self.decode(node).orElse(fallback.decode(node))
+```
 
 
 
