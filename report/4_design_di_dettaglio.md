@@ -1,27 +1,5 @@
 # Design di dettaglio
 
-## Analizzatore Lessicale (Lexer)
-L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale.
-Il suo scopo è la conversione della stringa di input in uno stream di token,
-mantenendo traccia delle coordinate spaziali per la visualizzazione degli errori.
-
-Le principali scelte di design sono ricadute su:
-* **Immutabilità e ADT**: Il tracciamento spaziale è delegato a un modulo Position modellato come ADT immutabile.
-    Ogni token generato detiene una referenza a una precisa istanza di Position,
-    garantendo l'assenza di side-effect durante le fasi successive di parsing.
-* **Gestione funzionale degli errori**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere la pipeline,
-  il design esclude il lancio di eccezioni in fase lessicale.
-  Viene adottato un approccio polimorfico per i token: i caratteri non validi vengono incapsulati in un costrutto specifico `ErrorToken`, 
-  permettendo al lexer di isolare il fallimento e proseguire la _tokenizzazione_ del resto del file.
-* **Risoluzione delle ambiguità**: La logica di longest-prefix-match e di priorità dei terminali è centralizzata in una pipeline funzionale 
-  che agisce da filtro progressivo (matching delle espressioni regolari, ordinamento per lunghezza del match, fallback sull'ordine di dichiarazione).
-
-![](images/lexerClassDiagram.svg)L'insieme di sincronizzazione adottato è una sovrastima di quello minimo, in quanto riunisce i
-terminali iniziali di tutti i simboli rimanenti nella sequenza anziché arrestarsi al primo che non
-possa essere vuoto. La scelta è conservativa e volontaria: nel caso peggiore l'analisi riprende
-leggermente in anticipo, segnalando un errore in più, mentre la formulazione minima richiederebbe di
-distinguere i simboli annullabili senza alcun beneficio sulla qualità delle segnalazioni.
-
 ## Definizione della grammatica
 
 La grammatica in forma EBNF è l'unico ingresso che l'utilizzatore deve fornire per descrivere la sintassi del proprio linguaggio, ed è qui il punto in cui la libreria è più esposta:
@@ -43,7 +21,6 @@ Le scelte di design rilevanti riguardano la forma che la definizione assume dal 
   grammatica. Si accetta consapevolmente uno stato mutabile su un tipo altrimenti immutabile: la mutazione è confinata alla fase di definizione e termina con essa.
 * **Identità dei simboli.** I simboli sono confrontati per identità dell'istanza creata dalla definizione, non per struttura. Ciò è possibile perché una grammatica è un oggetto i cui membri
   vengono inizializzati una volta sola, e ogni simbolo attraversa immutato la conversione, la tabella di parsing e il parser. La scelta evita di dipendere dall'uguaglianza strutturale fra espressioni regolari, che l'ambiente non fornisce.
- 
 
 ## Grammatica processata
 
@@ -131,40 +108,151 @@ Durante una singola richiesta, l'engine, creato inizialmente con la sola teoria 
 Viene sfruttata la funzionalità di registrazione degli oggetti, così che i risultati vengano riportati direttamente in termini di istanze ricevute in ingresso.
 Le soluzioni prodotte dall'engine vengono raccolte per popolare la tabella da restituire.
 
+La libreria utilizzata per interfacciarsi con l'engine è caratterizzata da uno stile object-oriented e un ampio uso di stato mutabile,
+pertanto si prevede che in fase di implementazione emerga la necessità di uno strato intermedio che fornisca maggiore robustezza e consenta di mantenere uno stile idiomatico. 
+
+## Analizzatore Lessicale (Lexer)
+
+L'analizzatore lessicale rappresenta il primo filtro della pipeline architetturale. 
+Il suo scopo è la conversione della stringa di input in una sequenza di token, 
+ciascuno associato a un simbolo terminale, mantenendo traccia delle coordinate spaziali 
+calcolate in base alla posizione nel testo originale.
+
+Le principali scelte di design sono ricadute su:
+
+* **Immutabilità e incapsulamento dello stato (Cursor)**: Per supportare l'iterazione sull'input mantenendo l'assenza di side-effect, 
+  il tracciamento spaziale (offset, riga, colonna) è incapsulato in un'entità privata Cursor. 
+  Ad ogni match, il lexer non muta puntatori globali, ma genera una nuova istanza di Cursor tramite il metodo `advance`, garantendo la purezza funzionale dell'avanzamento.
+
+* **Gestione funzionale degli errori e ADT**: Per soddisfare il requisito di tolleranza ai caratteri non riconosciuti senza interrompere l'analisi, 
+  il design esclude il lancio di eccezioni in fase lessicale. 
+  Il tipo di ritorno è modellato come enum type `Token`, permettendo di istanziare ValidToken per i match corretti o di isolare il carattere invalido in uno specifico ErrorToken, 
+  incapsulando il fallimento per consentire l'analisi del resto dell'input.
+
+![](images/lexer_class_diagram.svg)
+
+### Algoritmo di matching e risoluzione delle ambiguità
+
+L'algoritmo di tokenizzazione procede consumando iterativamente porzioni della stringa di input $S$. Ad ogni passo, il sistema valuta l'insieme dei terminali $T$ definiti nella grammatica.
+Sia $p_t$ il prefisso di $S$ che verifica la regola associata al terminale $t \in T$. Si definisce l'insieme dei match validi come:
+$M = \lbrace\, (t, p_t) \;\vert{}\; p_t \text{ è un prefisso valido di } S \,\rbrace$
+
+Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategie di filtraggio:
+* **Maximal match (Longest-prefix-match)**: Il sistema seleziona il sottoinsieme $M_{max} \subseteq M$ che massimizza la lunghezza del prefisso riconosciuto. Ovvero:
+  $M_{max} = \lbrace\, (t, p_t) \in M \;\vert{}\; \vert{}p_t\vert{} = \max_{(x, p_x) \in M} \vert{}p_x\vert{} \,\rbrace$
+* **Fallback posizionale (Priorità)**: Se $\vert{}M_{max}\vert{} > 1$, si verifica una collisione fra terminali che riconoscono la medesima porzione di testo
+  (ad esempio, una parola chiave come if che fa match sia col terminale IF che col terminale generico ID).
+  Il sistema risolve il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica.
+  Definendo $idx(t)$ come l'indice di dichiarazione del terminale $t$, si estrae l'unico vincitore $(t^*, p_{t^*})$ tale che $idx(t^*)$ sia minimo.
+* **Scarto dei terminali ignorabili**: Se il terminale vincitore $t^*$ è esplicitamente marcato come ignorabile (es. spaziature o commenti),
+  il prefisso $p_{t^*}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output.
+* **Error fallback**: Nel caso limite in cui l'insieme dei match validi sia vuoto ($M = \emptyset$), il sistema non riconosce alcun prefisso.
+  Per evitare stalli e proseguire l'analisi, il lexer consuma esattamente il primo carattere di $S$,
+  lo incapsula in un ErrorToken tracciandone la posizione originaria, e riprende l'algoritmo sul resto della stringa.
+
 ## Analizzatore sintattico
-E' il filtro che converte lo stream di token in un CST, guidato dalla tabella di parsing e dal simbolo iniziale ricevuti in costruzione.
+È il filtro che converte lo stream di token in un CST, guidato dalla tabella di parsing e dal simbolo iniziale ricevuti in costruzione.
 La sua interfaccia riflette la separazione tra la fase di costruzione, che si compie una volta sola nella grammatica, e la fase di analisi, ripetibile su input diversi senza ricalcolare nulla.
 
 ### Albero sintattico concreto
-Il CST è un _sum type_ con tre casi: 
+Il CST è un _sum type_ con tre casi:
 * un nodo di regola, etichettato da un nonterminale e provvisto di una sequenza ordinata di figli.
 * una foglia, etichettata dal token riconosciuto
 * un nodo di errore, che conserva l'insieme dei terminali attesi e i token scartati durante il recupero.
 
 Il nodo di errore dichiara che l'albero viene prodotto in ogni caso, anche per input malformato, e che il fallimento è un contenuto dell'albero, non un'alternativa ad esso.
-Il risultato dell'analisi è un _ product type_ che accosta l'albero all'elenco degli errori riscontrati. Su input scorretto l'albero conserva tutta la struttura riconosciuta, che è l'informazione di cui un decodificare ha bisogno.
+Il risultato dell'analisi è un _product type_ che accosta l'albero all'elenco degli errori riscontrati. Su input scorretto l'albero conserva tutta la struttura riconosciuta, che è l'informazione di cui un decodificare ha bisogno.
 Viene comunque esposta un'interfaccia secondaria che riduce il risultato al primo errore.
 
-Il nodo di regola può essere unicamente da un nonterminale dichiarato dall'utilizzatore. I nonterminali ad uso interno non sono ammessi dal tipo.
+Il nodo di regola può essere unicamente etichettato da un nonterminale dichiarato dall'utilizzatore. I nonterminali ad uso interno non sono ammessi dal tipo.
 
 ### Scelte di design
-* **Ricorsione al posto della pila esplicita.** L'algoritmo LL(1) è definito in termini di una pula di simboli da riconoscere. L'implementazione non la introduce: la pila è quella delle chiamate, e il riconoscimento di un simbolo e di una sequenza di simboli sono due funzioni mutuamente ricorsive.
-    La motivazione è la costruzione dell'albero, che con la ricorsione avviene naturalmente nella risalita, senza introdurre strutture dati parallele per ricomporre i nodi già chiusi.
+* **Ricorsione al posto della pila esplicita.** L'algoritmo LL(1) è definito in termini di una pila di simboli da riconoscere. L'implementazione non la introduce: la pila è quella delle chiamate, e il riconoscimento di un simbolo e di una sequenza di simboli sono due funzioni mutuamente ricorsive.
+  La motivazione è la costruzione dell'albero, che con la ricorsione avviene naturalmente nella risalita, senza introdurre strutture dati parallele per ricomporre i nodi già chiusi.
 * **Un simbolo può produrre più nodi.** Il riconoscimento di un simbolo porta ad una sequenza di nodi, questo per rendere possibile l'appiattimento dei nonterminali ad uso interno. Un simbolo interno restituisce direttamente i propri figli, che vengono così assorbiti dal padre, mentre un nonterminale dichiarato
-    restituisce unicamente un nodo che li racchiude.
-* **Stato e accumolo degli errori come monade.** L'analisi è espressa come composizione di funzioni che ricevono lo stesso stream residuo e restituiscono un valore, lo stream rimanente e gli errori incontrati. La loro composizione propaga lo stream e concatena gli errori.
-    Si tratta della combinazione di uno stato e di un accumulatore, resa disponibile come tipo interno della libreria. L'effetto è che le funzioni di analisi si scrivono in forma dichiarativa, senza passare esplicitamente stream ed alenco errori e senza stato mutabile.
+  restituisce unicamente un nodo che li racchiude.
+* **Stato e accumulo degli errori come monade.** L'analisi è espressa come composizione di funzioni che ricevono lo stesso stream residuo e restituiscono un valore, lo stream rimanente e gli errori incontrati. La loro composizione propaga lo stream e concatena gli errori.
+  Si tratta della combinazione di uno stato e di un accumulatore, resa disponibile come tipo interno della libreria. L'effetto è che le funzioni di analisi si scrivono in forma dichiarativa, senza passare esplicitamente stream ed alenco errori e senza stato mutabile.
 * **Insieme di sincronizzazione come attributo ereditato.** L'insieme dei terminali su cui riprendere dopo un errore dipende dal contesto in cui il simbolo corrente è stato espanso. Viene modellato come parametro contestuale, quindi si propaga implicitamente lungo la ricorsione, e sono esplicite solo
-    le posizioni in cui viene esteso, ossia quelle in cui si entra in una sequenza e vi si aggiungono i terminali che possono iniziare i simboli rimanenti. 
+  le posizioni in cui viene esteso, ossia quelle in cui si entra in una sequenza e vi si aggiungono i terminali che possono iniziare i simboli rimanenti.
 
 ### Recupero degli errori
-L'analisi non viene interrotta quando nessuna transizione è applicabile. L'errore viene comunque registrato, i token in input scartati finchè non se ne incotra uno appartenente all'insieme di sincronizzazione del simbolo corrente e l'ananlisi riprende da li. 
+L'analisi non viene interrotta quando nessuna transizione è applicabile. L'errore viene comunque registrato, i token in input scartati finchè non se ne incotra uno appartenente all'insieme di sincronizzazione del simbolo corrente e l'ananlisi riprende da li.
 Se il token raggiunto non consente comunque di espandere il simbolo, questo viene abbandonato e sostituito nell'albero da un nodo di errore. Non viene mai invalidata dunque la porzione di albero già costruita.
 
-L'insieme di sincronizzazione adottato è una sovrastima di quello minimo, in quanto riunisce i terminali iniziali di tutti i simboli rimanenti nella sequenza anzichè fermarsi al primo che possa essere vuoto. La scelta è voluta, poiché nel caso peggiore l'analisi riprende leggermente in anticipo, segnalando un errore in più, mentre la configurazione minima richiederebbe di
+L'insieme di sincronizzazione adottato è una sovrastima di quello minimo, in quanto riunisce i terminali iniziali di tutti i simboli rimanenti nella sequenza anziché fermarsi al primo che possa essere vuoto. La scelta è voluta, poiché nel caso peggiore l'analisi riprende leggermente in anticipo, segnalando un errore in più, mentre la configurazione minima richiederebbe di
 distinguere i simboli annullabili senza alcun grosso beneficio sulla qualità delle segnalazioni.
 
-La presenza di input residuo dopo il riconoscimente del simbolo iniziale è segnalata come errore invece che essere ignorata.  
-
+La presenza di input residuo dopo il riconoscimento del simbolo iniziale è segnalata come errore invece che essere ignorata.
 
 ## Decodifica CST-AST
+
+Il processo di decodifica trasforma l'albero sintattico concreto (CST), generato dal parser,
+nell'albero sintattico astratto (AST) specifico per il dominio dell'utente.
+Poiché la forma del CST è strettamente vincolata alle regole di derivazione della grammatica formale,
+il design necessita di disaccoppiare la visita dalla logica di costruzione dei nodi finali.
+
+### Modellazione del CST
+
+Come formalizzato nel diagramma delle classi, il risultato del parsing è strutturato tramite l'enum type `CSTNode`, 
+che partiziona i nodi in tre categorie mutuamente esclusive:
+* **RuleNode**: nodo interno generato da un'espansione grammaticale. 
+  Contiene un riferimento al simbolo `Nonterminal` associato e la sequenza ordinata di figli `Seq[CSTNode]`.
+* **LeafNode**: nodo foglia terminale, incapsula direttamente un `Token` generato dal Lexer.
+* **ErrorNode**: nodo speciale introdotto per supportare il meccanismo di recovery del parser. 
+  Traccia i simboli attesi `TerminalOrEoi` e gli eventuali token scartati per permettere una diagnostica dettagliata.
+
+![](images/decoder_class_diagram.svg)
+
+### Strategia di astrazione e pattern matching
+
+A livello di design, CST e AST sono entità indipendenti. 
+Per evitare all'utilizzatore l'onere di navigare manualmente il CST tramite indici posizionali o laboriose ispezioni manuali sui `RuleNode`, 
+il design introduce il pattern degli _Extractor Objects_ tipizzati.
+
+Attraverso gli estrattori, la complessità dell'albero viene mascherata, 
+consentendo di definire regole di decodifica dichiarative basate sul pattern matching nativo di Scala. 
+L'efficacia di questa scelta di design emerge chiaramente nel caso d'uso del linguaggio FINF.
+Per convertire le produzioni grammaticali nei nodi custom dell'AST (come _ValDecl_ o _FunDecl_),
+l'utilizzatore ricorre alla decostruzione sintattica. 
+
+Un estrattore come `valueDeclaration(VAL(_), ID(valName), COLON(_), typeNode, ASSIGN(_), valueNode, SEMI(_))` intercetta un RuleNode, 
+scarta la sintassi superflua (parole chiave, punteggiatura) catturata dalle wildcard 
+e lega direttamente alle variabili solo i nodi semantici rilevanti (_typeNode_, _valueNode_), 
+rendendo il mapping verso l'AST immediato e type-safe.
+
+### Design monadico e il companion object
+
+Per governare la complessità computazionale della conversione tra i due alberi, 
+il design implementa un approccio monadico. 
+Come illustrato nel diagramma UML, l'astrazione poggia sul trait `AstDecoder`. 
+L'esposizione delle funzioni di ordine superiore _map_ e _flatMap_ permette di comporre decodificatori elementari in pipeline complesse. 
+L'operatore _orElse_ fornisce una logica di fallback fondamentale per processare produzioni con molteplici alternative 
+(es. un'espressione che può essere una costante, un identificatore o un'operazione binaria).
+
+A supporto del trait, il design valorizza il ruolo del _companion object_ AstDecoder, 
+impiegato come modulo per orchestrare le funzionalità di libreria. 
+Oltre a fornire i costruttori di base (pure, fail), il companion object è utilizzato per iniettare metodi di estensione (extension methods) come _.as[A]_ e _.decodeAll[A]_. 
+Questa scelta idiomatica estende le funzionalità delle classi CSTNode e Seq[CSTNode] in modo del tutto non invasivo, 
+snellendo drasticamente la sintassi delle for-comprehension usate per la decodifica (per esempio in FINF).
+
+### Strategia di propagazione e aggregazione degli errori
+
+Il risultato del metodo _decode_ è progettato per preservare la purezza funzionale: 
+non solleva eccezioni a runtime, ma restituisce un Either[AstError, A]. 
+L'enum type AstError forma una gerarchia che modella semanticamente le cause dell'interruzione: 
+dal fallimento di business logic generato dall'utente, `DecodingError`, alle anomalie strutturali, 
+come `UnexpectedNodeStructure` (che preserva formalmente sia il nodo aspettato AnySymbol che la realtà strutturale effettiva CSTNode incontrata).
+
+A livello di design, per governare il flusso di esecuzione in presenza di fallimenti,
+il modulo di decodifica espone due strategie complementari:
+* **Fail-fast (Short-circuiting)**: Destinata all'elaborazione di strutture gerarchiche e logicamente dipendenti. 
+  In tali scenari, il fallimento nella decodifica di una sotto-componente invalida di riflesso l'intero costrutto. 
+  Facendo leva sulle proprietà algebriche del design monadico, il sistema interrompe l'analisi al primissimo errore riscontrato. 
+  Questa scelta progettuale previene l'insorgere di stati inconsistenti a valle e arresta tempestivamente l'esecuzione di computazioni superflue.
+* **Accumulazione esaustiva**: Concepita per l'elaborazione di collezioni composte da elementi logicamente indipendenti 
+  (ad esempio, un elenco di dichiarazioni separate all'interno di un programma).
+  In questo contesto, un'interruzione prematura sarebbe una mancanza che obbliga l'utilizzatore a un ciclo di risoluzione dei problemi frammentato e iterativo (essendo un solo errore riportato per volta). 
+  Per superare i limiti dello short-circuiting nativo, il design espone un costrutto dedicato che forza la valutazione dell'intera collezione, intercettando ogni singola anomalia. 
+  I molteplici fallimenti vengono quindi consolidati strutturalmente attraverso il pattern Composite `AggregateError`, 
+  permettendo al sistema di restituire un report diagnostico simultaneo ed esaustivo.

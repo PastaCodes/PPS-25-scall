@@ -14,7 +14,7 @@ object FinfDecoder:
       case typeRef(INT(_))        => Right(IntType)
       case typeRef(BOOL(_))       => Right(BoolType)
       case typeRef(ID(typeName))  => Right(CustomType(typeName))
-      case _ => Left(AstError.UnexpectedNode("typeRef", node.toString))
+      case _ => Left(AstError.UnexpectedNodeStructure(typeRef, node))
 
   given paramListDecoder: AstDecoder[Seq[Parameter]] with
     def decode(node: CSTNode): Either[AstError, Seq[Parameter]] = node match
@@ -24,7 +24,7 @@ object FinfDecoder:
             (typeNode.as[TypeRef].map(Parameter(paramName, _)), rest)
           case Seq(ID(paramName), COLON(_), typeNode) =>
             (typeNode.as[TypeRef].map(Parameter(paramName, _)), Seq.empty)
-      case _ => Left(AstError.UnexpectedNode("parameterList", node.toString))
+      case _ => Left(AstError.UnexpectedNodeStructure(parameterList, node))
 
   given argListDecoder: AstDecoder[Seq[Expr]] with
     def decode(node: CSTNode): Either[AstError, Seq[Expr]] = node match
@@ -32,7 +32,7 @@ object FinfDecoder:
         AstDecoder.decodeSequence(children):
           case Seq(exprNode, COMMA(_), rest*) => (exprNode.as[Expr], rest)
           case Seq(exprNode) => (exprNode.as[Expr], Seq.empty)
-      case _ => Left(AstError.UnexpectedNode("argumentList", node.toString))
+      case _ => Left(AstError.UnexpectedNodeStructure(argumentList, node))
 
   given exprDecoder: AstDecoder[Expr] with
     def decode(node: CSTNode): Either[AstError, Expr] = node match
@@ -73,7 +73,7 @@ object FinfDecoder:
       case weakExpression(FALSE(_))     => Right(BoolLit(false))
       case weakExpression(NULL(_))      => Right(NullLit)
       case weakExpression(ID(identifier)) => Right(Id(identifier))
-      case _ => Left(AstError.UnexpectedNode("expression", node.toString))
+      case _ => Left(AstError.UnexpectedNodeStructure(expression, node))
 
   given declDecoder: AstDecoder[Declaration] with
     def decode(node: CSTNode): Either[AstError, Declaration] = node match
@@ -94,7 +94,7 @@ object FinfDecoder:
                 decodedType   <- typeNode.as[TypeRef]
                 decodedParams <- paramsNode.as[Seq[Parameter]]
               yield (nameStr, decodedType, decodedParams)
-            case _ => Left(AstError.DecodingError("Invalid function signature"))
+            case _ => Left(AstError.UnexpectedNodeStructure(functionSignature, signatureNode))
           (localDecls, bodyExpr) <- bodyNode match
             case RuleSeq(n, LET(_), rest*) if n == functionBody.name =>
               val declsNodes = rest.dropRight(3)
@@ -105,9 +105,9 @@ object FinfDecoder:
               yield (declarations, expression)
             case functionBody(exprNode, SEMI(_)) =>
               exprNode.as[Expr].map((Seq.empty, _))
-            case _ => Left(AstError.DecodingError("Invalid function body"))
+            case _ => Left(AstError.UnexpectedNodeStructure(functionBody, bodyNode))
         yield FunDecl(funcName, returnType, parameters, localDecls, bodyExpr)
-      case _ => Left(AstError.UnexpectedNode("declaration", node.toString))
+      case _ => Left(AstError.UnexpectedNodeStructure(topDeclaration, node))
 
   given programDecoder: AstDecoder[Program] with
     def decode(node: CSTNode): Either[AstError, Program] = node match
@@ -120,4 +120,4 @@ object FinfDecoder:
         yield Program(declarations, mainExpression)
       case program(exprNode, SEMI(_)) =>
         exprNode.as[Expr].map(Program(Seq.empty, _))
-      case _ => Left(AstError.UnexpectedNode("program", node.toString))
+      case _ => Left(AstError.UnexpectedNodeStructure(program, node))

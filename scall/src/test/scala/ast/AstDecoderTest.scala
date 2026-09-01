@@ -9,28 +9,28 @@ import ast.AstDecoder.*
 import ast.Extractors.*
 
 object DecoderTestFixtures:
+
   sealed trait Expr
   case class IntLiteral(value: Int) extends Expr
   case class Identifier(name: String) extends Expr
   case class BinaryOp(op: String, left: Expr, right: Expr) extends Expr
   case class Block(statements: Seq[Expr]) extends Expr
 
-class AstDecoderTest extends AnyFunSuite:
-  import DecoderTestFixtures.*
+  val idTerminal: Terminal = Terminal("ID", "[a-zA-Z0-9+*-]+".r)
+  val numTerminal: Terminal = Terminal("NUM", "[a-zA-Z0-9+*-]+".r)
+  val opTerminal: Terminal = Terminal("OP", "[a-zA-Z0-9+*-]+".r)
+  val binaryExprRule: Nonterminal = Nonterminal("binary_expr", () => null)
+  val blockRule: Nonterminal = Nonterminal("block", () => null)
 
-  private val idTerminal: Terminal = Terminal("ID", "[a-zA-Z0-9+*-]+".r)
-  private val numTerminal: Terminal = Terminal("NUM", "[a-zA-Z0-9+*-]+".r)
-  private val opTerminal: Terminal = Terminal("OP", "[a-zA-Z0-9+*-]+".r)
-
-  private def leaf(lexeme: String, tokenName: String = "ID"): CSTNode.LeafNode =
+  def leaf(lexeme: String, tokenName: String = "ID"): CSTNode.LeafNode =
     val terminal: Terminal = tokenName match
       case "NUM" => numTerminal
-      case "OP" => opTerminal
-      case _ => idTerminal
+      case "OP"  => opTerminal
+      case _     => idTerminal
     CSTNode.LeafNode(Token.Valid(terminal, lexeme, Position(1, 1)))
 
-  private def rule(name: String, children: CSTNode*): CSTNode.RuleNode =
-    CSTNode.RuleNode(Nonterminal(name, () => null), children)
+  def rule(symbol: Nonterminal, children: CSTNode*): CSTNode.RuleNode =
+    CSTNode.RuleNode(symbol, children)
 
   given AstDecoder[IntLiteral] with
     def decode(node: CSTNode): Either[AstError, IntLiteral] = node match
@@ -38,14 +38,14 @@ class AstDecoderTest extends AnyFunSuite:
         valStr.toIntOption
           .map(IntLiteral(_))
           .toRight(AstError.DecodingError(s"Expected integer: '$valStr'"))
-      case _ => Left(AstError.UnexpectedNode("LeafNode", "RuleNode"))
+      case otherNode => Left(AstError.UnexpectedNodeStructure(numTerminal, otherNode))
 
-  given exprDecoder: AstDecoder[Expr] with
+  given AstDecoder[Expr] with
     def decode(node: CSTNode): Either[AstError, Expr] = node match
       case Leaf(valStr) if valStr.headOption.exists(_.isDigit) =>
         valStr.toIntOption.map(IntLiteral(_)).toRight(AstError.DecodingError("Invalid number"))
       case Leaf(name) => Right(Identifier(name))
-      case RuleSeq("binary_expr", leftNode, opNode, rightNode) =>
+      case RuleSeq(n, leftNode, opNode, rightNode) if n == binaryExprRule.name =>
         for
           left <- leftNode.as[Expr]
           opStr <- opNode match
@@ -53,8 +53,14 @@ class AstDecoderTest extends AnyFunSuite:
             case _ => Left(AstError.DecodingError("Operator must be leaf"))
           right <- rightNode.as[Expr]
         yield BinaryOp(opStr, left, right)
-      case Rule("block", children) => children.decodeAll[Expr].map(Block(_))
+      case RuleSeq(n, children*) if n == blockRule.name =>
+        children.decodeAll[Expr].map(Block(_))
       case _ => Left(AstError.DecodingError("Unrecognized structure"))
+
+
+class AstDecoderTest extends AnyFunSuite:
+  import DecoderTestFixtures.*
+  import DecoderTestFixtures.given
 
   test("pure lifts a value into a successful decoder"):
     leaf("any").as[String](using AstDecoder.pure("Value")) shouldBe Right("Value")
@@ -77,10 +83,10 @@ class AstDecoderTest extends AnyFunSuite:
 
   test("orElse provides fallback decoding strategies upon primary failure"):
     val failingDecoder = AstDecoder.fail[Expr](AstError.DecodingError("Failed"))
-    leaf("100", "NUM").as[Expr](using failingDecoder.orElse(exprDecoder)) shouldBe Right(IntLiteral(100))
+    leaf("100", "NUM").as[Expr](using failingDecoder.orElse(summon[AstDecoder[Expr]])) shouldBe Right(IntLiteral(100))
 
   test("recursively decodes nested rule trees into complex AST hierarchies"):
-    val cst = rule("binary_expr", leaf("x"), leaf("+", "OP"), leaf("10", "NUM"))
+    val cst = rule(binaryExprRule, leaf("x"), leaf("+", "OP"), leaf("10", "NUM"))
     cst.as[Expr] shouldBe Right(BinaryOp("+", Identifier("x"), IntLiteral(10)))
 
   test("decodeAll accumulates all errors across sequences"):
@@ -96,3 +102,4 @@ class AstDecoderTest extends AnyFunSuite:
   test("decodeAll builds the complete collection when all nodes are valid"):
     val nodes = Seq(leaf("1", "NUM"), leaf("2", "NUM"))
     nodes.decodeAll[IntLiteral] shouldBe Right(Seq(IntLiteral(1), IntLiteral(2)))
+    
