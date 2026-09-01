@@ -35,9 +35,9 @@ In alcuni casi viene richiesto di verificare strutture non banali, facilitando l
 
 ```scala
 test("oneOrMore is processed by concatenating repetition to all alternatives"):
-    ProcessedGrammar.visit((a | b).+).alternatives.toSeq should matchPattern:
-      case Seq(
-        Seq(s1, r1: InternalNonterminal),
-        Seq(s2, r2: InternalNonterminal)
-      ) if Set(s1, s2) == Set(a, b) && r1 == r2 =>
+  ProcessedGrammar.visit((a | b).+).alternatives.toSeq should matchPattern:
+    case Seq(
+      Seq(s1, r1: InternalNonterminal),
+      Seq(s2, r2: InternalNonterminal)
+    ) if Set(s1, s2) == Set(a, b) && r1 == r2 =>
 ```
