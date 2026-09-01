@@ -1,7 +1,5 @@
 # Design di dettaglio
 
-// TODO: aggiungere paragrafino introduttivo?
-
 Alcuni dei diagrammi riportati presentano l'uso di stereotipi non standard per la rappresentazione di tipi di dato algebrici:
 * **\<\<enum\>\>** per indicare una normale enumerazione.
 * **\<\<object\>\>** per indicare un tipo che coincide con la sua stessa unica istanza.
