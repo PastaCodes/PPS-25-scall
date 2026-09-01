@@ -14,3 +14,6 @@ Questo pattern si dimostra essere particolarmente efficace per implementare un c
 in quanto richiede trasformazioni di dati ordinati e sequenziali.
 
 ![](images/architectural_design.svg)
+
+Per via della forte separazione fra le varie componenti del sistema, il design architetturale resta molto semplice.
+La maggior parte delle scelte di design ricade nell'organizzazione interna delle singole parti.
