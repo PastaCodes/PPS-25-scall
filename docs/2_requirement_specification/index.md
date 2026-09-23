@@ -59,7 +59,7 @@ ovvero se per ogni coppia di produzioni distinte&ensp;$A\rightarrow\alpha$&ensp;
 * se&ensp;$\beta\Rightarrow^*\varepsilon$&ensp;allora&ensp;$\mathrm{FIRST}(\alpha)\cap\mathrm{FOLLOW}(A)=\emptyset$.
 
 Data la tabella l'analisi procede per configurazioni&ensp;$(\gamma,\,u)$,&ensp;dove $\gamma$ è la sequenza di simboli ancora da riconoscere 
-e $u$ l'input non ancora consumato, a partire da&ensp;$(S\,\$,\;w\,\$)$&ensp;e fino all'accettazione in&ensp;$`(\$,\;\$)`$:
+e $u$ l'input non ancora consumato, a partire da&ensp;$(S\,\$,\;w\,\$)$&ensp;e fino all'accettazione in&ensp;$(\$,\;\$)$:
 
 * $(b\,\gamma,\;b\,u)\;\vdash\;(\gamma,\;u)$&ensp;riconoscimento di un terminale, cui corrisponde una foglia del CST.
 * $(A\,\gamma,\;b\,u)\;\vdash\;(\alpha\,\gamma,\;b\,u)$&ensp;se&ensp;$\mathrm{T}\lbrack A,b\rbrack=\alpha$,&ensp;espansione di un nonterminale, cui corrisponde un nodo del CST etichettato $A$ avente per figli i sottoalberi di $\alpha$. I nonterminali introdotti dalla conversione EBNF-CFG non compaiono nell'albero: i loro nodi sono sostituiti dalla sequenza dei propri figli.
