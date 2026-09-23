@@ -43,9 +43,9 @@ In seguito a questa fase di costruzione inizia l'analisi lessicale, con il lexer
 
 L'algoritmo di parsing LL(1) richiede il calcolo dei FIRST set e FOLLOW set, definiti come segue:
 
-* $\mathrm{FIRST}(X) = \lbrace\, b \;|\; X \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \;|\; X \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X$ è un simbolo della grammatica.
-* $\mathrm{FIRST}(X_1X_2\!\cdots\!X_n) = \lbrace\, b \;|\; X_1X_2\!\cdots\!X_n \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \;|\; X_1X_2\!\cdots\!X_n \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X_1X_2\!\cdots\!X_n$ è una stringa di simboli.
-* $\mathrm{FOLLOW}(X) = \lbrace\, b \;|\; S\,\$ \Rightarrow^* \beta\,X\,b\,\delta \,\rbrace$&ensp;dove $S$ è il simbolo iniziale della grammatica.
+* $\mathrm{FIRST}(X) = \lbrace\, b \mid X \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X$ è un simbolo della grammatica.
+* $\mathrm{FIRST}(X_1X_2\!\cdots\!X_n) = \lbrace\, b \mid X_1X_2\!\cdots\!X_n \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X_1X_2\!\cdots\!X_n \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X_1X_2\!\cdots\!X_n$ è una stringa di simboli.
+* $\mathrm{FOLLOW}(X) = \lbrace\, b \mid S\,\$ \Rightarrow^* \beta\,X\,b\,\delta \,\rbrace$&ensp;dove $S$ è il simbolo iniziale della grammatica.
 
 Sulla base di questi, viene definita la tabella di parsing come segue:
 
