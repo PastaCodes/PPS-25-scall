@@ -563,6 +563,6 @@ garantendo costruzioni strettamente tipizzate e sicure.
 
 ---
 
-[Indice](../index.md) |
-[Capitolo precedente](../4_design_di_dettaglio/index.md) |
+[Indice](../index.md) &#124;
+[Capitolo precedente](../4_design_di_dettaglio/index.md) &#124;
 [Capitolo successivo](../6_testing/index.md)

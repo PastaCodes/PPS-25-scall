@@ -20,6 +20,6 @@ La maggior parte delle scelte di design ricade nell'organizzazione interna delle
 
 ---
 
-[Indice](../index.md) |
-[Capitolo precedente](../2_requirement_specification/index.md) |
+[Indice](../index.md) &#124;
+[Capitolo precedente](../2_requirement_specification/index.md) &#124;
 [Capitolo successivo](../4_design_di_dettaglio/index.md)

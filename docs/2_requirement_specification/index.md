@@ -139,6 +139,6 @@ Vengono inclusi vincoli che nel contesto di una libreria di parsing generica cos
 
 ---
 
-[Indice](../index.md) |
-[Capitolo precedente](../1_processo_di_sviluppo/index.md) |
+[Indice](../index.md) &#124;
+[Capitolo precedente](../1_processo_di_sviluppo/index.md) &#124;
 [Capitolo successivo](../3_design_architetturale/index.md)

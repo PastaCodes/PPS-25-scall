@@ -65,5 +65,5 @@ penalizzata soltanto dalla libreria difficilmente utilizzabile.
 
 ---
 
-[Indice](../index.md) |
+[Indice](../index.md) &#124;
 [Capitolo precedente](../6_testing/index.md)

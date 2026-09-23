@@ -21,5 +21,5 @@ Il sottoprogetto FINF fornisce una base concreta su cui valutare la completezza 
 
 ---
 
-[Indice](../index.md) |
+[Indice](../index.md) &#124;
 [Capitolo successivo](../1_processo_di_sviluppo/index.md)

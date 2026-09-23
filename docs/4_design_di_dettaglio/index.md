@@ -270,6 +270,6 @@ il modulo di decodifica espone due strategie complementari:
 
 ---
 
-[Indice](../index.md) |
-[Capitolo precedente](../3_design_architetturale/index.md) |
+[Indice](../index.md) &#124;
+[Capitolo precedente](../3_design_architetturale/index.md) &#124;
 [Capitolo successivo](../5_implementazione/index.md)

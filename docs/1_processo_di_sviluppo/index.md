@@ -36,6 +36,6 @@ Questo approccio agevola lo sviluppo contemporaneo da parte di più persone.
 
 ---
 
-[Indice](../index.md) |
-[Capitolo precedente](../0_introduzione/index.md) |
+[Indice](../index.md) &#124;
+[Capitolo precedente](../0_introduzione/index.md) &#124;
 [Capitolo successivo](../2_requirement_specification/index.md)

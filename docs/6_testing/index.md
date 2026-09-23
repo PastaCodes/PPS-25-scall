@@ -45,6 +45,6 @@ test("oneOrMore is processed by concatenating repetition to all alternatives"):
 
 ---
 
-[Indice](../index.md) |
-[Capitolo precedente](../5_implementazione/index.md) |
+[Indice](../index.md) &#124;
+[Capitolo precedente](../5_implementazione/index.md) &#124;
 [Capitolo successivo](../7_retrospettiva/index.md)
