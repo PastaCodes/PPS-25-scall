@@ -72,7 +72,7 @@ Fra le possibili conversioni che producono una grammatica fattorizzata a sinistr
 * Opzionalità:&ensp;$\mathrm{ALT}(E \lor \varepsilon)=\mathrm{ALT}(E)\cup\lbrace\, \varepsilon \,\rbrace$,&ensp;$\mathrm{PROD}(E \lor \varepsilon)=\emptyset$.
 * Zero o più:&ensp;$\mathrm{ALT}(E^\ast)=\lbrace\, R \,\rbrace$,&ensp;$\mathrm{PROD}(E^\ast)=\mathrm{LFACT}\bigl(R, (\mathrm{ALT}(E)\cdot\lbrace\,R\,\rbrace)\cup\lbrace\,\varepsilon\,\rbrace\bigr)$.<br>
   Il simbolo $R$ è un nonterminale ad uso interno, introdotto per implementare la ripetizione. Ogni occorrenza di un operatore di ripetizione introduce un simbolo distinto.
-* Uno o più:&ensp;$\mathrm{ALT}(E^+)=\mathrm{ALT}(E)\cdot\lbrace\, R \,\rbrace$,&ensp;$\mathrm{PROD}(E^+)=\mathrm{PROD}(E^*)$.
+* Uno o più:&ensp;$\mathrm{ALT}(E^+)=\mathrm{ALT}(E)\cdot\lbrace\, R \,\rbrace$,&ensp;$\mathrm{PROD}(E^+)=\mathrm{PROD}(E^\alt)$.
 
 Si è fatto uso della notazione $A \cdot B$ per indicare il prodotto fra insiemi di stringhe, ossia $\lbrace\, \alpha\,\beta \mid \alpha \in A, \beta \in B \,\rbrace$.
 
@@ -149,9 +149,9 @@ Per risolvere le ambiguità, il sistema applica in sequenza le seguenti strategi
 * **Fallback posizionale (Priorità)**: Se $\vert{}M_{max}\vert{} > 1$, si verifica una collisione fra terminali che riconoscono la medesima porzione di testo
   (ad esempio, una parola chiave come if che fa match sia col terminale IF che col terminale generico ID).
   Il sistema risolve il conflitto assegnando la priorità al simbolo terminale dichiarato per primo nella grammatica (FS12).
-  Definendo $idx(t)$ come l'indice di dichiarazione del terminale $t$, si estrae l'unico vincitore $(t^*, p_{t^*})$ tale che $idx(t^*)$ sia minimo.
-* **Scarto dei terminali ignorabili**: Se il terminale vincitore $t^*$ è esplicitamente marcato come ignorabile (es. spaziature o commenti),
-  il prefisso $p_{t^*}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output (FS13).
+  Definendo $idx(t)$ come l'indice di dichiarazione del terminale $t$, si estrae l'unico vincitore $(t^\alt, p_{t^\alt})$ tale che $idx(t^\alt)$ sia minimo.
+* **Scarto dei terminali ignorabili**: Se il terminale vincitore $t^\alt$ è esplicitamente marcato come ignorabile (es. spaziature o commenti),
+  il prefisso $p_{t^\alt}$ viene consumato dall'input $S$, ma il sistema scarta la porzione in modo silente senza emettere alcun token nella sequenza di output (FS13).
 * **Error fallback**: Nel caso limite in cui l'insieme dei match validi sia vuoto ($M = \emptyset$), il sistema non riconosce alcun prefisso.
   Per evitare stalli e proseguire l'analisi, il lexer consuma esattamente il primo carattere di $S$,
   lo incapsula in un ErrorToken tracciandone la posizione originaria, e riprende l'algoritmo sul resto della stringa (FS14).
