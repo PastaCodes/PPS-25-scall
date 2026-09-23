@@ -100,8 +100,8 @@ Altri elementi del dominio potrebbero essere espressi in termini di programmazio
 In vista dell'implementazione in programmazione logica, si considera una riformulazione della definizione dei FIRST set e FOLLOW set:
 * $\mathrm{FIRST}(\varepsilon) = \lbrace\, \varepsilon \,\rbrace$.
 * $\mathrm{FIRST}(b\,\alpha) = \lbrace\, b \,\rbrace$.
-* $`\mathrm{FIRST}(X_1X_2\!\cdots\!X_n) \supseteq \mathrm{FIRST}(X_1) \setminus \lbrace\, \varepsilon \,\rbrace`$.
-* Se&ensp;$\varepsilon\in\mathrm{FIRST}(X_1)$&ensp;allora&ensp;$\mathrm{FIRST}(X_1X_2\!\cdots\!X_n) \supseteq \mathrm{FIRST}(X_2\!\cdots\!X_n)$.
+* $\mathrm{FIRST}(X_1X_2\mkern-3mu\cdots\mkern-3muX_n) \supseteq \mathrm{FIRST}(X_1) \setminus \lbrace\, \varepsilon \,\rbrace$.
+* Se&ensp;$\varepsilon\in\mathrm{FIRST}(X_1)$&ensp;allora&ensp;$\mathrm{FIRST}(X_1X_2\mkern-3mu\cdots\mkern-3muX_n) \supseteq \mathrm{FIRST}(X_2\mkern-3mu\cdots\mkern-3muX_n)$.
 * Per ogni produzione $X \rightarrow \alpha$ nella grammatica,&ensp;$\mathrm{FIRST}(X) \supseteq \mathrm{FIRST}(\alpha)$.
 * $\mathrm{FOLLOW}(S) \ni \$$&ensp;dove $S$ è il simbolo iniziale.
 * Per ogni produzione $Y \rightarrow \alpha\,X\,\beta$ nella grammatica,&ensp;$\mathrm{FOLLOW}(X) \supseteq \mathrm{FIRST}(\beta) \setminus \lbrace\, \varepsilon \,\rbrace$.
