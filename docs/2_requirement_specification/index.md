@@ -43,9 +43,9 @@ In seguito a questa fase di costruzione inizia l'analisi lessicale, con il lexer
 
 L'algoritmo di parsing LL(1) richiede il calcolo dei FIRST set e FOLLOW set, definiti come segue:
 
-* $\mathrm{FIRST}(X) = \lbrace\, b \mid X \Rightarrow^\alt b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X \Rightarrow^\alt \varepsilon \,\rbrace$&ensp;dove $X$ è un simbolo della grammatica.
-* $\mathrm{FIRST}(X_1X_2 \cdots X_n) = \lbrace\, b \mid X_1X_2 \cdots X_n \Rightarrow^\alt b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X_1X_2 \cdots X_n \Rightarrow^\alt \varepsilon \,\rbrace$&ensp;dove $X_1X_2 \cdots X_n$ è una stringa di simboli.
-* $\mathrm{FOLLOW}(X) = \lbrace\, b \mid S\,&#36; \Rightarrow^\alt \beta\,X\,b\,\delta \,\rbrace$&ensp;dove $S$ è il simbolo iniziale della grammatica.
+* $\mathrm{FIRST}(X) = \lbrace\, b \mid X \Rightarrow^\ast b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X \Rightarrow^\ast \varepsilon \,\rbrace$&ensp;dove $X$ è un simbolo della grammatica.
+* $\mathrm{FIRST}(X_1X_2 \cdots X_n) = \lbrace\, b \mid X_1X_2 \cdots X_n \Rightarrow^\ast b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X_1X_2 \cdots X_n \Rightarrow^\ast \varepsilon \,\rbrace$&ensp;dove $X_1X_2 \cdots X_n$ è una stringa di simboli.
+* $\mathrm{FOLLOW}(X) = \lbrace\, b \mid S\,&#36; \Rightarrow^\ast \beta\,X\,b\,\delta \,\rbrace$&ensp;dove $S$ è il simbolo iniziale della grammatica.
 
 Sulla base di questi, viene definita la tabella di parsing come segue:
 
@@ -56,7 +56,7 @@ La grammatica appartiene alla classe LL(1) se ogni cella così definita contiene
 ovvero se per ogni coppia di produzioni distinte&ensp;$A\rightarrow\alpha$&ensp;e&ensp;$A\rightarrow\beta$:
 * $\mathrm{FIRST}(\alpha)\cap\mathrm{FIRST}(\beta)=\emptyset$.
 * al massimo una fra $\alpha$ e $\beta$ deriva $\varepsilon$.
-* se&ensp;$\beta\Rightarrow^\alt\varepsilon$&ensp;allora&ensp;$\mathrm{FIRST}(\alpha)\cap\mathrm{FOLLOW}(A)=\emptyset$.
+* se&ensp;$\beta\Rightarrow^\ast\varepsilon$&ensp;allora&ensp;$\mathrm{FIRST}(\alpha)\cap\mathrm{FOLLOW}(A)=\emptyset$.
 
 Data la tabella l'analisi procede per configurazioni&ensp;$(\gamma,\,u)$,&ensp;dove $\gamma$ è la sequenza di simboli ancora da riconoscere 
 e $u$ l'input non ancora consumato, a partire da&ensp;$(S\,&#36;,\;w\,&#36;)$&ensp;e fino all'accettazione in&ensp;$(&#36;,\;&#36;)$:
