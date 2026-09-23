@@ -45,7 +45,7 @@ L'algoritmo di parsing LL(1) richiede il calcolo dei FIRST set e FOLLOW set, def
 
 * $\mathrm{FIRST}(X) = \lbrace\, b \mid X \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X$ è un simbolo della grammatica.
 * $\mathrm{FIRST}(X_1X_2\mkern-3mu\cdots\mkern-3muX_n) = \lbrace\, b \mid X_1X_2\mkern-3mu\cdots\mkern-3muX_n \Rightarrow^* b\,\alpha \,\rbrace \;\cup\; \lbrace\, \varepsilon \mid X_1X_2\mkern-3mu\cdots\mkern-3muX_n \Rightarrow^* \varepsilon \,\rbrace$&ensp;dove $X_1X_2\mkern-3mu\cdots\mkern-3muX_n$ è una stringa di simboli.
-* $\mathrm{FOLLOW}(X) = \lbrace\, b \mid S\,\$ \Rightarrow^* \beta\,X\,b\,\delta \,\rbrace$&ensp;dove $S$ è il simbolo iniziale della grammatica.
+* $\mathrm{FOLLOW}(X) = \lbrace\, b \mid S\,&#36; \Rightarrow^* \beta\,X\,b\,\delta \,\rbrace$&ensp;dove $S$ è il simbolo iniziale della grammatica.
 
 Sulla base di questi, viene definita la tabella di parsing come segue:
 
@@ -59,7 +59,7 @@ ovvero se per ogni coppia di produzioni distinte&ensp;$A\rightarrow\alpha$&ensp;
 * se&ensp;$\beta\Rightarrow^*\varepsilon$&ensp;allora&ensp;$\mathrm{FIRST}(\alpha)\cap\mathrm{FOLLOW}(A)=\emptyset$.
 
 Data la tabella l'analisi procede per configurazioni&ensp;$(\gamma,\,u)$,&ensp;dove $\gamma$ è la sequenza di simboli ancora da riconoscere 
-e $u$ l'input non ancora consumato, a partire da&ensp;$(S\,\$,\;w\,\$)$&ensp;e fino all'accettazione in&ensp;$(\$,\;\$)$:
+e $u$ l'input non ancora consumato, a partire da&ensp;$(S\,&#36;,\;w\,&#36;)$&ensp;e fino all'accettazione in&ensp;$(&#36;,\;&#36;)$:
 
 * $(b\,\gamma,\;b\,u)\;\vdash\;(\gamma,\;u)$&ensp;riconoscimento di un terminale, cui corrisponde una foglia del CST.
 * $(A\,\gamma,\;b\,u)\;\vdash\;(\alpha\,\gamma,\;b\,u)$&ensp;se&ensp;$\mathrm{T}\lbrack A,b\rbrack=\alpha$,&ensp;espansione di un nonterminale, cui corrisponde un nodo del CST etichettato $A$ avente per figli i sottoalberi di $\alpha$. I nonterminali introdotti dalla conversione EBNF-CFG non compaiono nell'albero: i loro nodi sono sostituiti dalla sequenza dei propri figli.
